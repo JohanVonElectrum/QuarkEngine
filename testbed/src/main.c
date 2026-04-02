@@ -1,6 +1,19 @@
-#include <stdio.h>
+#include <quark/entrypoint.h>
 
-int main(void) {
-    printf("Hello World!\n");
-    return 0;
+QUARK_B8 init_application(ApplicationCreateInfo* create_info)
+{
+    create_info->name = "Testbed";
+    create_info->version = "0.1.0";
+    create_info->graphics = (ApplicationGraphicsInfo){
+        .mode = GRAPHICS_MODE_VULKAN,
+        .data = {
+            .graphics = {
+                .title = "Testbed",
+                .width = 1280,
+                .height = 720,
+            }
+        }
+    };
+
+    return QUARK_TRUE;
 }
