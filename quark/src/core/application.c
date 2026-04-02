@@ -2,6 +2,8 @@
 
 #include "window.h"
 
+#include <quark/core/log.h>
+
 struct Application
 {
     const char* name;
@@ -16,13 +18,13 @@ static QUARK_B8 s_initialized = QUARK_FALSE;
 
 Application* create_application(const ApplicationCreateInfo* create_info) {
     if (s_initialized) {
-        // TODO: Log error
+        // TODO: Log error (assert)
         return NULL;
     }
 
     const QUARK_B8 headless = create_info->window.mode == GRAPHICS_MODE_NONE;
     if (!headless && !init_windowing()) {
-        // TODO: Log error
+        QUARK_LOG_FATAL("Failed to initialize windowing system");
         return NULL;
     }
 
@@ -36,8 +38,9 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
     if (!headless) {
         s_application.window = create_window(&create_info->window);
         if (!s_application.window) {
+            QUARK_LOG_ERROR("Failed to create window");
             if (!shutdown_windowing()) {
-                // TODO: Log error
+                QUARK_LOG_ERROR("Failed to shutdown windowing system");
             }
             return NULL;
         }
@@ -49,7 +52,7 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
 
 QUARK_B8 run_application(Application* application) {
     if (!s_initialized) {
-        // TODO: Log error
+        // TODO: Log error (assert)
         return QUARK_FALSE;
     }
 
@@ -61,7 +64,7 @@ QUARK_B8 run_application(Application* application) {
 
         if (!(application->flags & APPLICATION_FLAG_HEADLESS)) {
             if (!windowing_poll_events()) {
-                // TODO: Log error
+                QUARK_LOG_ERROR("Failed to poll windowing events");
                 return QUARK_FALSE;
             }
 
@@ -76,7 +79,7 @@ QUARK_B8 run_application(Application* application) {
 
 QUARK_B8 destroy_application(Application* application) {
     if (!s_initialized) {
-        // TODO: Log error
+        // TODO: Log error (assert)
         return QUARK_FALSE;
     }
 
@@ -84,13 +87,13 @@ QUARK_B8 destroy_application(Application* application) {
         QUARK_B8 destroy_window_success = QUARK_FALSE;
         if (application->window) {
             if (!((destroy_window_success = destroy_window(application->window)))) {
-                // TODO: Log error
+                QUARK_LOG_ERROR("Failed to destroy window");
             }
         }
 
         const QUARK_B8 shutdown_windowing_success = shutdown_windowing();
         if (!shutdown_windowing_success) {
-            // TODO: Log error
+            QUARK_LOG_ERROR("Failed to shutdown windowing system");
         }
 
         return destroy_window_success && shutdown_windowing_success;

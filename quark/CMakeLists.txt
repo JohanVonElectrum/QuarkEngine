@@ -1,6 +1,7 @@
 add_library(quark SHARED
     src/core/application.c
     src/core/window.c
+    src/core/logger.c
 )
 
 target_include_directories(quark PUBLIC

@@ -1,11 +1,13 @@
 #include "window.h"
 
+#include <quark/core/log.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
 
 void error_callback(int error, const char* description) {
-    printf("GLFW Error: %s\n", description);
+    QUARK_LOG_ERROR("GLFW Error: %s\n", description);
 }
 
 QUARK_B8 init_windowing() {
@@ -44,7 +46,7 @@ struct QuarkWindow
 
 QuarkWindow* create_window(const WindowCreateInfo* create_info) {
     if (create_info->mode == GRAPHICS_MODE_NONE) {
-        // TODO: Log warn
+        QUARK_LOG_WARN("Attempted to create a window in headless mode");
         return NULL;
     }
 
@@ -61,7 +63,7 @@ QuarkWindow* create_window(const WindowCreateInfo* create_info) {
     );
 
     if (!window) {
-        // TODO: Log error
+        QUARK_LOG_ERROR("Failed to create GLFW window");
         return NULL;
     }
 
