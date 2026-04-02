@@ -2,6 +2,7 @@
 
 #include "window.h"
 
+#include <quark/core/assert.h>
 #include <quark/core/log.h>
 
 struct Application
@@ -14,18 +15,23 @@ struct Application
 };
 
 static Application s_application;
-static QUARK_B8 s_initialized = QUARK_FALSE;
 
 Application* create_application(const ApplicationCreateInfo* create_info) {
-    if (s_initialized) {
-        // TODO: Log error (assert)
-        return NULL;
-    }
+    QUARK_ASSERT_RETURN(
+        nullptr,
+        create_info,
+        "Attempted to create application with NULL create info"
+    );
+    QUARK_ASSERT_RETURN(
+        nullptr,
+        s_application.flags == 0,
+        "Attempted to create application when one already exists"
+    );
 
     const QUARK_B8 headless = create_info->window.mode == GRAPHICS_MODE_NONE;
     if (!headless && !init_windowing()) {
         QUARK_LOG_FATAL("Failed to initialize windowing system");
-        return NULL;
+        return nullptr;
     }
 
     s_application.name = create_info->name;
@@ -42,19 +48,25 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
             if (!shutdown_windowing()) {
                 QUARK_LOG_ERROR("Failed to shutdown windowing system");
             }
-            return NULL;
+            return nullptr;
         }
     }
 
-    s_initialized = QUARK_TRUE;
+    s_application.flags |= APPLICATION_FLAG_INIT;
     return &s_application;
 }
 
 QUARK_B8 run_application(Application* application) {
-    if (!s_initialized) {
-        // TODO: Log error (assert)
-        return QUARK_FALSE;
-    }
+    QUARK_ASSERT_RETURN(
+        QUARK_FALSE,
+        application,
+        "Attempted to run NULL application"
+    );
+    QUARK_ASSERT_RETURN(
+        QUARK_FALSE,
+        application->flags & APPLICATION_FLAG_INIT,
+        "Attempted to run application that was not initialized"
+    );
 
     while (application->flags & APPLICATION_FLAG_RUNNING) {
         if (application->flags & APPLICATION_FLAG_SHOULD_CLOSE) {
@@ -78,10 +90,16 @@ QUARK_B8 run_application(Application* application) {
 }
 
 QUARK_B8 destroy_application(Application* application) {
-    if (!s_initialized) {
-        // TODO: Log error (assert)
-        return QUARK_FALSE;
-    }
+    QUARK_ASSERT_RETURN(
+        QUARK_FALSE,
+        application,
+        "Attempted to destroy NULL application"
+    );
+    QUARK_ASSERT_RETURN(
+        QUARK_FALSE,
+        application->flags & APPLICATION_FLAG_INIT,
+        "Attempted to destroy application that was not initialized"
+    );
 
     if (!(application->flags & APPLICATION_FLAG_HEADLESS)) {
         QUARK_B8 destroy_window_success = QUARK_FALSE;
@@ -99,7 +117,7 @@ QUARK_B8 destroy_application(Application* application) {
         return destroy_window_success && shutdown_windowing_success;
     }
 
-    s_initialized = QUARK_FALSE;
+    application->flags = 0;
 
     return QUARK_TRUE;
 }

@@ -10,6 +10,14 @@ target_include_directories(quark PUBLIC
 
 target_compile_definitions(quark PRIVATE QUARK_ENGINE)
 
+if (WIN32)
+    target_compile_definitions(quark PRIVATE QUARK_PLATFORM_WINDOWS)
+endif ()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(quark PRIVATE QUARK_DEBUG)
+endif ()
+
 include(FetchContent)
 
 FetchContent_Declare(
@@ -19,10 +27,10 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL        OFF CACHE BOOL "" FORCE)
-set(GLFW_LIBRARY_TYPE   SHARED CACHE STRING "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+set(GLFW_LIBRARY_TYPE SHARED CACHE STRING "" FORCE)
 FetchContent_MakeAvailable(glfw)
 target_link_libraries(quark PRIVATE glfw)
 

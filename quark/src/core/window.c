@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <GLFW/glfw3.h>
 
+#include "quark/core/assert.h"
+
 void error_callback(int error, const char* description) {
     QUARK_LOG_ERROR("GLFW Error: %s\n", description);
 }
@@ -47,7 +49,7 @@ struct QuarkWindow
 QuarkWindow* create_window(const WindowCreateInfo* create_info) {
     if (create_info->mode == GRAPHICS_MODE_NONE) {
         QUARK_LOG_WARN("Attempted to create a window in headless mode");
-        return NULL;
+        return nullptr;
     }
 
     if (create_info->mode == GRAPHICS_MODE_VULKAN) {
@@ -58,13 +60,13 @@ QuarkWindow* create_window(const WindowCreateInfo* create_info) {
         create_info->data.graphics.width,
         create_info->data.graphics.height,
         create_info->data.graphics.title,
-        NULL,
-        NULL
+        nullptr,
+        nullptr
     );
 
     if (!window) {
         QUARK_LOG_ERROR("Failed to create GLFW window");
-        return NULL;
+        return nullptr;
     }
 
     QuarkWindow* quark_window = malloc(sizeof(QuarkWindow));
@@ -73,10 +75,11 @@ QuarkWindow* create_window(const WindowCreateInfo* create_info) {
 }
 
 QUARK_B8 destroy_window(QuarkWindow* window) {
-    if (!window) {
-        // TODO: Log error (assert)
-        return QUARK_FALSE;
-    }
+    QUARK_ASSERT_RETURN(
+        QUARK_FALSE,
+        window,
+        "Attempted to destroy NULL window"
+    );
 
     GLFWwindow* window_handle = window->handle;
     free(window);
@@ -84,10 +87,11 @@ QUARK_B8 destroy_window(QuarkWindow* window) {
 }
 
 QUARK_B8 window_should_close(const QuarkWindow* window) {
-    if (!window) {
-        // TODO: Log error (assert)
-        return QUARK_FALSE;
-    }
+    QUARK_ASSERT_RETURN(
+        QUARK_FALSE,
+        window,
+        "Attempted to check if NULL window should close"
+    );
 
     return glfwWindowShouldClose(window->handle);
 }
