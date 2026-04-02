@@ -3,6 +3,9 @@
 #include <quark/core/application.h>
 #include <quark/core/log.h>
 
+#undef QUARK_LOG_INTERNAL_ENGINE
+#define QUARK_LOG_INTERNAL_ENGINE QUARK_TRUE
+
 int main(void) {
     QUARK_LOG_INFO("Starting Quark");
 
@@ -32,3 +35,6 @@ int main(void) {
 
     return success ? 0 : -3;
 }
+
+#undef QUARK_LOG_INTERNAL_ENGINE
+#define QUARK_LOG_INTERNAL_ENGINE QUARK_FALSE

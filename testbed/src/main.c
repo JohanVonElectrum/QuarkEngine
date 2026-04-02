@@ -15,5 +15,7 @@ QUARK_B8 init_application(ApplicationCreateInfo* create_info)
         }
     };
 
+    QUARK_LOG_INFO("Initialized application create info");
+
     return QUARK_TRUE;
 }

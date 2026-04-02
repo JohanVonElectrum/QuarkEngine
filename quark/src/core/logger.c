@@ -13,7 +13,7 @@ static const char* const LOG_LEVEL_NAMES[6] = {
     [LOG_LEVEL_TRACE] = "TRACE",
 };
 
-void quark_log(const LogLevel level, const char* format, ...) {
+void quark_log(const QUARK_B8 is_engine, const LogLevel level, const char* format, ...) {
     /* TODO: This implementation is bad.
      * When allocators are implemented start using them.
      * Create an async ring buffer and make console output optional.
@@ -27,5 +27,5 @@ void quark_log(const LogLevel level, const char* format, ...) {
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
 
-    printf("[%s] %s\n", LOG_LEVEL_NAMES[level], buffer);
+    printf("[%s | %s] %s\n", is_engine ? "Quark" : "App", LOG_LEVEL_NAMES[level], buffer);
 }
