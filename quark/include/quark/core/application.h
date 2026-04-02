@@ -2,31 +2,13 @@
 
 #include <quark/api.h>
 #include <quark/primitives.h>
-
-typedef struct
-{
-    enum
-    {
-        GRAPHICS_MODE_NONE,
-        GRAPHICS_MODE_VULKAN,
-    } mode;
-    union
-    {
-        struct {} headless;
-        struct
-        {
-            const char* title;
-            QUARK_U16 width;
-            QUARK_U16 height;
-        } graphics;
-    } data;
-} ApplicationGraphicsInfo;
+#include <quark/core/window.h>
 
 typedef struct
 {
     const char* name;
     const char* version;
-    ApplicationGraphicsInfo graphics;
+    WindowCreateInfo window;
 } ApplicationCreateInfo;
 
 typedef struct Application Application;
