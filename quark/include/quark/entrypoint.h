@@ -1,39 +1,64 @@
 #pragma once
 
 #include <quark/core/application.h>
+#include <quark/core/engine.h>
 #include <quark/core/log.h>
 
 #undef QUARK_LOG_INTERNAL_ENGINE
 #define QUARK_LOG_INTERNAL_ENGINE QUARK_TRUE
 
-int main(void) {
-    QUARK_LOG_INFO("Starting Quark");
+enum QUARK_EXIT_CODE
+{
+    QUARK_EXIT_CODE_SUCCESS = 0,
+    QUARK_EXIT_CODE_FAILED_TO_INITIALIZE_ENGINE = BIT(32 - 1),
+    QUARK_EXIT_CODE_FAILED_TO_INITIALIZE_APPLICATION = BIT(32 - 2),
+    QUARK_EXIT_CODE_FAILED_TO_CREATE_APPLICATION = BIT(32 - 3),
+    QUARK_EXIT_CODE_FAILED_TO_RUN_APPLICATION = BIT(32 - 4),
+    QUARK_EXIT_CODE_FAILED_TO_DESTROY_APPLICATION = BIT(32 - 5),
+    QUARK_EXIT_CODE_FAILED_TO_SHUTDOWN_ENGINE = BIT(32 - 6),
+};
+
+int main(const int argc, char** argv) {
+    if (!init_quark(argc, argv)) {
+        QUARK_LOG_FATAL("Failed to initialize Quark");
+        return QUARK_EXIT_CODE_FAILED_TO_INITIALIZE_ENGINE;
+    }
+
+    int exit_code = QUARK_EXIT_CODE_SUCCESS;
 
     ApplicationCreateInfo create_info;
     if (!init_application(&create_info)) {
-        QUARK_LOG_ERROR("Failed to initialize application");
-        return -1;
+        QUARK_LOG_FATAL("Failed to initialize application");
+        exit_code |= QUARK_EXIT_CODE_FAILED_TO_INITIALIZE_APPLICATION;
+        goto engine_shutdown;
     }
 
     QUARK_LOG_INFO("Loading \"%s\"...", create_info.name);
 
     Application* application = create_application(&create_info);
     if (!application) {
-        QUARK_LOG_ERROR("Failed to create application");
-        return -2;
+        QUARK_LOG_FATAL("Failed to create application");
+        exit_code |= QUARK_EXIT_CODE_FAILED_TO_CREATE_APPLICATION;
+        goto engine_shutdown;
     }
 
-    const QUARK_B8 success = run_application(application);
-    if (!success) {
+    if (!run_application(application)) {
         QUARK_LOG_ERROR("Application exited with an error");
+        exit_code |= QUARK_EXIT_CODE_FAILED_TO_RUN_APPLICATION;
     }
 
     if (!destroy_application(application)) {
-        QUARK_LOG_ERROR("Failed to destroy application");
-        return -4;
+        QUARK_LOG_FATAL("Failed to destroy application");
+        exit_code |= QUARK_EXIT_CODE_FAILED_TO_DESTROY_APPLICATION;
     }
 
-    return success ? 0 : -3;
+engine_shutdown:
+    if (!shutdown_quark()) {
+        QUARK_LOG_FATAL("Failed to shutdown Quark");
+        exit_code |= QUARK_EXIT_CODE_FAILED_TO_SHUTDOWN_ENGINE;
+    }
+
+    return exit_code;
 }
 
 #undef QUARK_LOG_INTERNAL_ENGINE

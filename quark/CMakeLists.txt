@@ -2,6 +2,7 @@ add_library(quark SHARED
     src/core/application.c
     src/core/window.c
     src/core/logger.c
+    src/core/engine.c
 )
 
 target_include_directories(quark PUBLIC
@@ -12,6 +13,9 @@ target_compile_definitions(quark PRIVATE QUARK_ENGINE)
 
 if (WIN32)
     target_compile_definitions(quark PRIVATE QUARK_PLATFORM_WINDOWS)
+    target_sources(quark PRIVATE
+        src/platform/thread_win32.c
+    )
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
