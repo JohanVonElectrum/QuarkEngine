@@ -1,12 +1,11 @@
 #include "window.h"
 
+#include "../platform/memory.h"
+
+#include <quark/core/assert.h>
 #include <quark/core/log.h>
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <GLFW/glfw3.h>
-
-#include "quark/core/assert.h"
 
 void error_callback(int error, const char* description) {
     QUARK_LOG_ERROR("GLFW Error: %s\n", description);
@@ -69,7 +68,7 @@ QuarkWindow* create_window(const WindowCreateInfo* create_info) {
         return nullptr;
     }
 
-    QuarkWindow* quark_window = malloc(sizeof(QuarkWindow));
+    QuarkWindow* quark_window = quark_mem_alloc(sizeof(QuarkWindow));
     quark_window->handle = window;
     return quark_window;
 }
@@ -82,7 +81,7 @@ QUARK_B8 destroy_window(QuarkWindow* window) {
     );
 
     GLFWwindow* window_handle = window->handle;
-    free(window);
+    quark_mem_free(window);
     EXECUTE_UNHANDLED(glfwDestroyWindow(window_handle));
 }
 

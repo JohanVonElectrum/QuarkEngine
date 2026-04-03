@@ -2,7 +2,6 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <string.h>
 
 static const char* const LOG_LEVEL_NAMES[6] = {
     [LOG_LEVEL_FATAL] = "FATAL",

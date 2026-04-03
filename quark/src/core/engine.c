@@ -1,7 +1,8 @@
 #include <quark/core/engine.h>
 
 #include "../platform/thread.h"
-#include "quark/core/log.h"
+
+#include <quark/core/log.h>
 
 QUARK_B8 init_quark(int argc, char** argv) {
     if (!init_main_thread()) {

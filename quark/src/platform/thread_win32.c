@@ -1,5 +1,7 @@
 #include "thread.h"
 
+#include "memory.h"
+
 #include <process.h>
 #include <windows.h>
 
@@ -16,7 +18,7 @@ struct QuarkThread
 thread_local QuarkThread* current_thread;
 
 QuarkThread* init_main_thread(void) {
-    current_thread = (QuarkThread*)calloc(1, sizeof(QuarkThread));
+    current_thread = (QuarkThread*)quark_mem_calloc(1, sizeof(QuarkThread));
     if (!current_thread) return nullptr;
 
     current_thread->handle = GetCurrentThread();
@@ -34,7 +36,7 @@ static unsigned __stdcall thread_wrapper(void* arg) {
 }
 
 QuarkThread* spawn_thread(const PFN_QuarkThreadFunc func, void* arg) {
-    QuarkThread* thread = calloc(1, sizeof(QuarkThread));
+    QuarkThread* thread = quark_mem_calloc(1, sizeof(QuarkThread));
     if (!thread) return nullptr;
 
     thread->func = func;
@@ -43,7 +45,7 @@ QuarkThread* spawn_thread(const PFN_QuarkThreadFunc func, void* arg) {
 
     thread->handle = (HANDLE)_beginthreadex(nullptr, 0, thread_wrapper, thread, 0, &thread->tid);
     if (thread->handle == nullptr) {
-        free(thread);
+        quark_mem_free(thread);
         return nullptr;
     }
     return thread;
@@ -56,7 +58,7 @@ void* join_thread(QuarkThread* thread) {
     WaitForSingleObject(thread->handle, INFINITE);
     CloseHandle(thread->handle);
     void* ret = thread->ret;
-    free(thread);
+    quark_mem_free(thread);
     return ret;
 }
 
