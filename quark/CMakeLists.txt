@@ -3,6 +3,7 @@ add_library(quark SHARED
     src/core/window.c
     src/core/logger.c
     src/core/engine.c
+    src/core/event.c
 )
 
 target_include_directories(quark PUBLIC
