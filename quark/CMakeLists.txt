@@ -1,7 +1,7 @@
 add_library(quark SHARED
     src/core/application.c
     src/core/window.c
-    src/core/logger.c
+    src/core/tracing.c
     src/core/engine.c
     src/core/event.c
 )
