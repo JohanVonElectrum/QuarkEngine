@@ -14,6 +14,7 @@ target_compile_definitions(quark PRIVATE QUARK_ENGINE)
 if (WIN32)
     target_compile_definitions(quark PRIVATE QUARK_PLATFORM_WINDOWS)
     target_sources(quark PRIVATE
+        src/platform/clock_win32.c
         src/platform/memory_win32.c
         src/platform/thread_win32.c
     )
