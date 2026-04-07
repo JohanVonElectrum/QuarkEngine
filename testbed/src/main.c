@@ -3,7 +3,11 @@
 QUARK_B8 init_application(ApplicationCreateInfo* create_info)
 {
     create_info->name = "Testbed";
-    create_info->version = "0.1.0";
+    create_info->version = (Version){
+        .major = 0,
+        .minor = 1,
+        .patch = 0,
+    };
     create_info->window = (WindowCreateInfo){
         .mode = GRAPHICS_MODE_VULKAN,
         .data = {

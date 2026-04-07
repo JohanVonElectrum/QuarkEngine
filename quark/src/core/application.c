@@ -1,6 +1,7 @@
 #include "application.h"
 
 #include "window.h"
+#include "../renderer/backend.h"
 
 #include <quark/core/assert.h>
 #include <quark/core/log.h>
@@ -8,7 +9,7 @@
 struct Application
 {
     const char* name;
-    const char* version;
+    Version version;
     QUARK_U8 flags;
     // TODO: Support multiple windows
     QuarkWindow* window;
@@ -42,6 +43,14 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
     }
 
     if (!headless) {
+        init_renderer_backend(
+            create_info->window.mode - 1,
+            create_info->name,
+            create_info->version.major,
+            create_info->version.minor,
+            create_info->version.patch
+        );
+
         s_application.window = create_window(&create_info->window);
         if (!s_application.window) {
             QUARK_LOG_ERROR("Failed to create window");

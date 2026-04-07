@@ -6,8 +6,15 @@
 
 typedef struct
 {
+    QUARK_U16 major;
+    QUARK_U16 minor;
+    QUARK_U16 patch;
+} Version;
+
+typedef struct
+{
     const char* name;
-    const char* version;
+    Version version;
     WindowCreateInfo window;
 } ApplicationCreateInfo;
 
