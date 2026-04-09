@@ -43,13 +43,19 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
     }
 
     if (!headless) {
-        init_renderer_backend(
+        if (!init_renderer_backend(
             create_info->window.mode - 1,
             create_info->name,
             create_info->version.major,
             create_info->version.minor,
             create_info->version.patch
-        );
+        )) {
+            QUARK_LOG_ERROR("Failed to initialize renderer backend");
+            if (!shutdown_windowing()) {
+                QUARK_LOG_ERROR("Failed to shutdown windowing system");
+            }
+            return nullptr;
+        }
 
         s_application.window = create_window(&create_info->window);
         if (!s_application.window) {
