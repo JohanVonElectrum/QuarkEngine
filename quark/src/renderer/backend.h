@@ -28,6 +28,8 @@ QUARK_B8 BACKEND_PREFIXED(init_renderer_backend)(
     const char* app_name, QUARK_U16 app_major, QUARK_U16 app_minor, QUARK_U16 app_patch
 );
 
+QUARK_B8 BACKEND_PREFIXED(shutdown_renderer_backend)();
+
 #undef BACKEND_COMMON
 #undef BACKEND_PREFIX
 

@@ -155,6 +155,29 @@ QUARK_B8 vk_init_renderer_backend(
     return QUARK_TRUE;
 }
 
+QUARK_B8 vk_shutdown_renderer_backend() {
+#ifdef QUARK_DEBUG
+    const auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(
+        context.instance,
+        "vkDestroyDebugUtilsMessengerEXT"
+    );
+    QUARK_ASSERT_RETURN(
+        QUARK_FALSE,
+        vkDestroyDebugUtilsMessengerEXT != nullptr,
+        "Failed to get vkDestroyDebugUtilsMessengerEXT function pointer"
+    );
+    vkDestroyDebugUtilsMessengerEXT(context.instance, context.debug_messenger, context.allocator);
+    QUARK_LOG_DEBUG("Destroyed Vulkan debug messenger");
+#endif // QUARK_DEBUG
+
+    vkDestroyInstance(context.instance, context.allocator);
+    QUARK_LOG_DEBUG("Destroyed Vulkan instance");
+
+    QUARK_LOG_INFO("Shutdown renderer backend");
+
+    return QUARK_TRUE;
+}
+
 #ifdef QUARK_DEBUG
 VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
     const VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,

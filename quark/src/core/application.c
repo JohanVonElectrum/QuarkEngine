@@ -116,23 +116,28 @@ QUARK_B8 destroy_application(Application* application) {
         "Attempted to destroy application that was not initialized"
     );
 
+    QUARK_B8 result = QUARK_TRUE;
+
     if (!(application->flags & APPLICATION_FLAG_HEADLESS)) {
-        QUARK_B8 destroy_window_success = QUARK_FALSE;
+         if (!shutdown_renderer_backend()) {
+             QUARK_LOG_ERROR("Failed to shutdown renderer backend");
+             result = QUARK_FALSE;
+         }
+
         if (application->window) {
-            if (!((destroy_window_success = destroy_window(application->window)))) {
+            if (!destroy_window(application->window)) {
                 QUARK_LOG_ERROR("Failed to destroy window");
+                result = QUARK_FALSE;
             }
         }
 
-        const QUARK_B8 shutdown_windowing_success = shutdown_windowing();
-        if (!shutdown_windowing_success) {
+        if (!shutdown_windowing()) {
             QUARK_LOG_ERROR("Failed to shutdown windowing system");
+            result = QUARK_FALSE;
         }
-
-        return destroy_window_success && shutdown_windowing_success;
     }
 
     application->flags = 0;
 
-    return QUARK_TRUE;
+    return result;
 }
