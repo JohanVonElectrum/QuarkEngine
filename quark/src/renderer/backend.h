@@ -23,9 +23,9 @@ typedef enum
 
 QUARK_B8 BACKEND_PREFIXED(init_renderer_backend)(
 #ifdef BACKEND_COMMON
-    const RendererBackendKind backend,
+    RendererBackendKind backend,
 #endif // BACKEND_COMMON
-    const char* appName, QUARK_U16 appMajor, QUARK_U16 appMinor, QUARK_U16 appPatch
+    const char* app_name, QUARK_U16 app_major, QUARK_U16 app_minor, QUARK_U16 app_patch
 );
 
 #undef BACKEND_COMMON

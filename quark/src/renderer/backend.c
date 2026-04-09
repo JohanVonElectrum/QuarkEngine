@@ -6,12 +6,12 @@
 
 QUARK_B8 init_renderer_backend(
     const RendererBackendKind backend,
-    const char* appName,
-    const QUARK_U16 appMajor, const QUARK_U16 appMinor, const QUARK_U16 appPatch
+    const char* app_name,
+    const QUARK_U16 app_major, const QUARK_U16 app_minor, const QUARK_U16 app_patch
 ) {
     switch (backend) {
         case QUARK_RENDERER_BACKEND_VK:
-            return vk_init_renderer_backend(appName, appMajor, appMinor, appPatch);
+            return vk_init_renderer_backend(app_name, app_major, app_minor, app_patch);
         default:
             QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend);
             return QUARK_FALSE;
