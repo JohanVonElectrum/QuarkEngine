@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 // Set to `LOG_LEVEL_NONE` to disable console logging.
-#define CONSOLE_LOG_LEVEL LOG_LEVEL_TRACE
+#define CONSOLE_LOG_LEVEL MIN_LOG_LEVEL
 
 static thread_local QUARK_USIZE tracing_span_id_counter = 0;
 static EventQueue* queue = nullptr;
