@@ -11,6 +11,8 @@ void* quark_mem_commit(void* ptr, QUARK_USIZE size);
 QUARK_B8 quark_mem_decommit(void* ptr, QUARK_USIZE size);
 QUARK_B8 quark_mem_release(void* ptr, QUARK_USIZE size);
 
+void quark_mem_copy(void* dest, const void* src, QUARK_USIZE size);
+
 QUARK_USIZE quark_mem_alignment();
 QUARK_USIZE quark_mem_page_size();
 

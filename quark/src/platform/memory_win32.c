@@ -117,6 +117,10 @@ QUARK_B8 quark_mem_release(void* ptr, const QUARK_USIZE size) {
     return QUARK_TRUE;
 }
 
+void quark_mem_copy(void* dest, const void* src, const QUARK_USIZE size) {
+    CopyMemory(dest, src, size);
+}
+
 QUARK_USIZE quark_mem_alignment() {
     return MEMORY_ALLOCATION_ALIGNMENT;
 }
