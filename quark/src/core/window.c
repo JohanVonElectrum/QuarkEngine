@@ -1,6 +1,7 @@
 #include "window.h"
 
 #include "../platform/memory.h"
+#include "../renderer/backend.h"
 
 #include <quark/core/assert.h>
 #include <quark/core/log.h>
@@ -43,6 +44,7 @@ QUARK_B8 windowing_poll_events() {
 struct QuarkWindow
 {
     GLFWwindow* handle;
+    QuarkWindowRendering* rendering;
 };
 
 QuarkWindow* create_window(const WindowCreateInfo* create_info) {
@@ -68,8 +70,18 @@ QuarkWindow* create_window(const WindowCreateInfo* create_info) {
         return nullptr;
     }
 
+    QuarkWindowRendering* rendering;
+    if (!create_window_rendering(window, &rendering)) {
+        QUARK_LOG_ERROR("Failed to create rendering");
+        return nullptr;
+    }
+
     QuarkWindow* quark_window = quark_mem_alloc(sizeof(QuarkWindow));
     quark_window->handle = window;
+    quark_window->rendering = rendering;
+
+    glfwSetWindowUserPointer(window, quark_window);
+
     return quark_window;
 }
 
@@ -81,7 +93,9 @@ QUARK_B8 destroy_window(QuarkWindow* window) {
     );
 
     GLFWwindow* window_handle = window->handle;
+    QuarkWindowRendering* rendering = window->rendering;
     quark_mem_free(window);
+    destroy_window_rendering(rendering);
     EXECUTE_UNHANDLED(glfwDestroyWindow(window_handle));
 }
 

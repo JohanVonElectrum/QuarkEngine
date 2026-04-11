@@ -6,6 +6,10 @@ typedef enum
     QUARK_RENDERER_BACKEND_VK,
 } RendererBackendKind;
 
+typedef struct QuarkWindowRendering QuarkWindowRendering;
+
+typedef struct GLFWwindow GLFWwindow;
+
 #endif // QUARK_RENDERER_BACKEND_TYPES
 
 #ifndef QUARK_RENDERER_BACKEND_FUNCTIONS
@@ -29,6 +33,9 @@ QUARK_B8 BACKEND_PREFIXED(init_renderer_backend)(
 );
 
 QUARK_B8 BACKEND_PREFIXED(shutdown_renderer_backend)();
+
+QUARK_B8 BACKEND_PREFIXED(create_window_rendering)(GLFWwindow* handle, QuarkWindowRendering** rendering);
+QUARK_B8 BACKEND_PREFIXED(destroy_window_rendering)(QuarkWindowRendering* rendering);
 
 #undef BACKEND_COMMON
 #undef BACKEND_PREFIX

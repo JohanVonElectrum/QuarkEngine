@@ -119,12 +119,7 @@ QUARK_B8 destroy_application(Application* application) {
     QUARK_B8 result = QUARK_TRUE;
 
     if (!(application->flags & APPLICATION_FLAG_HEADLESS)) {
-         if (!shutdown_renderer_backend()) {
-             QUARK_LOG_ERROR("Failed to shutdown renderer backend");
-             result = QUARK_FALSE;
-         }
-
-        if (application->window) {
+         if (application->window) {
             if (!destroy_window(application->window)) {
                 QUARK_LOG_ERROR("Failed to destroy window");
                 result = QUARK_FALSE;
@@ -133,6 +128,11 @@ QUARK_B8 destroy_application(Application* application) {
 
         if (!shutdown_windowing()) {
             QUARK_LOG_ERROR("Failed to shutdown windowing system");
+            result = QUARK_FALSE;
+        }
+
+        if (!shutdown_renderer_backend()) {
+            QUARK_LOG_ERROR("Failed to shutdown renderer backend");
             result = QUARK_FALSE;
         }
     }

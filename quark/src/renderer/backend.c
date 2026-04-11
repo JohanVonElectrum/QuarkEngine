@@ -30,3 +30,23 @@ QUARK_B8 shutdown_renderer_backend() {
             return QUARK_FALSE;
     };
 }
+
+QUARK_B8 create_window_rendering(GLFWwindow* handle, QuarkWindowRendering** rendering) {
+    switch (backend_kind) {
+        case QUARK_RENDERER_BACKEND_VK:
+            return vk_create_window_rendering(handle, rendering);
+        default:
+            QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend_kind);
+            return QUARK_FALSE;
+    };
+}
+
+QUARK_B8 destroy_window_rendering(QuarkWindowRendering* rendering) {
+    switch (backend_kind) {
+        case QUARK_RENDERER_BACKEND_VK:
+            return vk_destroy_window_rendering(rendering);
+        default:
+            QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend_kind);
+            return QUARK_FALSE;
+    }
+}

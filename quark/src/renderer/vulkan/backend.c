@@ -19,6 +19,11 @@ typedef struct
 #endif // QUARK_DEBUG
 } BackendContext;
 
+struct QuarkWindowRendering
+{
+    VkSurfaceKHR surface;
+};
+
 static BackendContext context;
 
 #ifdef QUARK_DEBUG
@@ -176,6 +181,23 @@ QUARK_B8 vk_shutdown_renderer_backend() {
     QUARK_LOG_INFO("Shutdown renderer backend");
 
     return QUARK_TRUE;
+}
+
+QUARK_B8 vk_create_window_rendering(GLFWwindow* handle, QuarkWindowRendering** rendering) {
+    *rendering = quark_mem_alloc(sizeof(QuarkWindowRendering));
+
+    VK_CHECK_RETURN(
+        glfwCreateWindowSurface(context.instance, handle, context.allocator, &(*rendering)->surface),
+        QUARK_FALSE
+    );
+    // TODO: create window rendering objects
+    return QUARK_TRUE;
+}
+
+QUARK_B8 vk_destroy_window_rendering(QuarkWindowRendering* rendering) {
+    // TODO: destroy window rendering objects
+    vkDestroySurfaceKHR(context.instance, rendering->surface, context.allocator);
+    return quark_mem_free(rendering);
 }
 
 #ifdef QUARK_DEBUG
