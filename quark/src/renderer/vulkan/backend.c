@@ -1,5 +1,6 @@
 #include "backend.h"
 
+#include "device.h"
 #include "vk.h"
 #include "../../platform/memory.h"
 
@@ -10,21 +11,7 @@
 
 #include <string.h>
 
-typedef struct
-{
-    VkInstance instance;
-    VkAllocationCallbacks* allocator;
-#ifdef QUARK_DEBUG
-    VkDebugUtilsMessengerEXT debug_messenger;
-#endif // QUARK_DEBUG
-} BackendContext;
-
-struct QuarkWindowRendering
-{
-    VkSurfaceKHR surface;
-};
-
-static BackendContext context;
+static VulkanContext context;
 
 #ifdef QUARK_DEBUG
 VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
@@ -72,7 +59,7 @@ QUARK_B8 vk_init_renderer_backend(
     );
 
 #ifdef QUARK_DEBUG
-    const char** extensions = quark_mem_alloc(sizeof(const char*) * (instance_create_info.enabledExtensionCount + 1));
+    const char* extensions[instance_create_info.enabledExtensionCount + 1];
     quark_mem_copy(extensions, instance_create_info.ppEnabledExtensionNames,
                    instance_create_info.enabledExtensionCount * sizeof(const char*));
     extensions[instance_create_info.enabledExtensionCount++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
@@ -90,7 +77,7 @@ QUARK_B8 vk_init_renderer_backend(
 
     QUARK_U32 available_layer_count = 0;
     VK_CHECK_RETURN(vkEnumerateInstanceLayerProperties(&available_layer_count, nullptr), QUARK_FALSE);
-    VkLayerProperties* available_layers = quark_mem_alloc(sizeof(VkLayerProperties) * available_layer_count);
+    VkLayerProperties available_layers[available_layer_count];
     VK_CHECK_RETURN(vkEnumerateInstanceLayerProperties(&available_layer_count, available_layers), QUARK_FALSE);
     for (QUARK_U32 i = 0; i < required_layer_count; ++i) {
         for (QUARK_U32 j = 0; j < available_layer_count; ++j) {
@@ -99,8 +86,6 @@ QUARK_B8 vk_init_renderer_backend(
             }
         }
         QUARK_LOG_ERROR("Required Vulkan layer not found: %s", required_layers[i]);
-        quark_mem_free(extensions);
-        quark_mem_free(available_layers);
         return QUARK_FALSE;
     found:
         QUARK_LOG_DEBUG("Found required Vulkan layer: %s", required_layers[i]);
@@ -109,11 +94,7 @@ QUARK_B8 vk_init_renderer_backend(
     instance_create_info.ppEnabledLayerNames = required_layers;
 #endif // QUARK_DEBUG
 
-    VK_CHECK_X(vkCreateInstance(&instance_create_info, context.allocator, &context.instance), {
-               quark_mem_free(extensions);
-               quark_mem_free(available_layers);
-               return QUARK_FALSE;
-               });
+    VK_CHECK_RETURN(vkCreateInstance(&instance_create_info, context.allocator, &context.instance), QUARK_FALSE);
 
     QUARK_LOG_DEBUG("Created Vulkan instance");
 
@@ -183,21 +164,22 @@ QUARK_B8 vk_shutdown_renderer_backend() {
     return QUARK_TRUE;
 }
 
-QUARK_B8 vk_create_window_rendering(GLFWwindow* handle, QuarkWindowRendering** rendering) {
-    *rendering = quark_mem_alloc(sizeof(QuarkWindowRendering));
-
+QUARK_B8 vk_init_renderer_window(GLFWwindow* window) {
     VK_CHECK_RETURN(
-        glfwCreateWindowSurface(context.instance, handle, context.allocator, &(*rendering)->surface),
+        glfwCreateWindowSurface(context.instance, window, context.allocator, &context.surface),
         QUARK_FALSE
     );
+
+    create_vulkan_device(&context);
+
     // TODO: create window rendering objects
     return QUARK_TRUE;
 }
 
-QUARK_B8 vk_destroy_window_rendering(QuarkWindowRendering* rendering) {
+QUARK_B8 vk_shutdown_renderer_window(GLFWwindow* window) {
     // TODO: destroy window rendering objects
-    vkDestroySurfaceKHR(context.instance, rendering->surface, context.allocator);
-    return quark_mem_free(rendering);
+    vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
+    return destroy_vulkan_device(&context);
 }
 
 #ifdef QUARK_DEBUG

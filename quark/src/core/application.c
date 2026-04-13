@@ -11,7 +11,6 @@ struct Application
     const char* name;
     Version version;
     QUARK_U8 flags;
-    // TODO: Support multiple windows
     QuarkWindow* window;
 };
 

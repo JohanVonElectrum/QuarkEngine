@@ -6,6 +6,7 @@ add_library(quark SHARED
     src/core/event.c
     src/renderer/backend.c
     src/renderer/vulkan/backend.c
+    src/renderer/vulkan/device.c
 )
 
 target_include_directories(quark PUBLIC
