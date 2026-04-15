@@ -4,31 +4,80 @@
 
 #include "../../platform/memory.h"
 
-typedef struct QueueFamilyIndices
-{
-    QUARK_U32 graphics;
-    QUARK_U32 graphics_count;
-    QUARK_U32 present;
-    QUARK_U32 present_count;
-    QUARK_U32 compute;
-    QUARK_U32 compute_count;
-    QUARK_U32 transfer;
-    QUARK_U32 transfer_count;
-} QueueFamilyIndices;
+static QueueFamilyInfo make_invalid_queue_family_info();
+static void free_swapchain_support_details(SwapchainSupportDetails* swapchain_support_details);
+static QUARK_B8 extension_supported(
+    const VkExtensionProperties* available_extensions,
+    QUARK_U32 available_extension_count,
+    const char* extension_name
+);
 
 QUARK_B8 select_physical_device(VulkanContext* context);
+
+static QueueFamilyInfo make_invalid_queue_family_info() {
+    return (QueueFamilyInfo) {
+        .graphics = QUARK_VK_INVALID_QUEUE_FAMILY_INDEX,
+        .graphics_count = 0,
+        .present = QUARK_VK_INVALID_QUEUE_FAMILY_INDEX,
+        .present_count = 0,
+        .compute = QUARK_VK_INVALID_QUEUE_FAMILY_INDEX,
+        .compute_count = 0,
+        .transfer = QUARK_VK_INVALID_QUEUE_FAMILY_INDEX,
+        .transfer_count = 0,
+        .dedicated_transfer = QUARK_FALSE,
+    };
+}
+
+static void free_swapchain_support_details(SwapchainSupportDetails* swapchain_support_details) {
+    if (swapchain_support_details->formats != nullptr) {
+        if (quark_mem_free(swapchain_support_details->formats) == QUARK_FALSE) {
+            QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
+        }
+        swapchain_support_details->formats = nullptr;
+    }
+
+    if (swapchain_support_details->present_modes != nullptr) {
+        if (quark_mem_free(swapchain_support_details->present_modes) == QUARK_FALSE) {
+            QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
+        }
+        swapchain_support_details->present_modes = nullptr;
+    }
+
+    swapchain_support_details->format_count = 0;
+    swapchain_support_details->present_mode_count = 0;
+}
+
+static QUARK_B8 extension_supported(
+    const VkExtensionProperties* available_extensions,
+    const QUARK_U32 available_extension_count,
+    const char* extension_name
+) {
+    for (QUARK_U32 i = 0; i < available_extension_count; ++i) {
+        if (strcmp(extension_name, available_extensions[i].extensionName) == 0) {
+            return QUARK_TRUE;
+        }
+    }
+
+    return QUARK_FALSE;
+}
 
 QUARK_B8 create_vulkan_device(VulkanContext* context) {
     return select_physical_device(context);
 }
 
 QUARK_B8 destroy_vulkan_device(VulkanContext* context) {
-    quark_mem_free(context->device.swapchain_support.formats);
-    quark_mem_free(context->device.swapchain_support.present_modes);
+    free_swapchain_support_details(&context->device.swapchain_support);
+    context->device.queue_families = make_invalid_queue_family_info();
+    context->device.feature_support = (DeviceFeatureSupport) {0};
+    context->device.physical_device = VK_NULL_HANDLE;
+    context->device.logical_device = VK_NULL_HANDLE;
     return QUARK_TRUE;
 }
 
 QUARK_B8 select_physical_device(VulkanContext* context) {
+    free_swapchain_support_details(&context->device.swapchain_support);
+    context->device.queue_families = make_invalid_queue_family_info();
+    context->device.feature_support = (DeviceFeatureSupport) {0};
     context->device.physical_device = VK_NULL_HANDLE;
 
     QUARK_U32 physical_device_count = 0;
@@ -53,8 +102,32 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
         vkGetPhysicalDeviceProperties(physical_devices[i], &properties);
         VkPhysicalDeviceMemoryProperties memory_properties;
         vkGetPhysicalDeviceMemoryProperties(physical_devices[i], &memory_properties);
-        VkPhysicalDeviceFeatures features;
-        vkGetPhysicalDeviceFeatures(physical_devices[i], &features);
+        VkPhysicalDeviceFeatures2 features_2 = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+            .pNext = nullptr,
+        };
+        VkPhysicalDeviceAccelerationStructureFeaturesKHR acceleration_structure_features = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
+            .pNext = nullptr,
+        };
+        VkPhysicalDeviceRayTracingPipelineFeaturesKHR ray_tracing_pipeline_features = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+            .pNext = &acceleration_structure_features,
+        };
+        VkPhysicalDeviceRayQueryFeaturesKHR ray_query_features = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR,
+            .pNext = &ray_tracing_pipeline_features,
+        };
+        features_2.pNext = &ray_query_features;
+        vkGetPhysicalDeviceFeatures2(physical_devices[i], &features_2);
+
+        DeviceFeatureSupport feature_support = {
+            .core = features_2.features,
+            .acceleration_structure = acceleration_structure_features.accelerationStructure ? QUARK_TRUE : QUARK_FALSE,
+            .ray_query = ray_query_features.rayQuery ? QUARK_TRUE : QUARK_FALSE,
+            .ray_tracing_pipeline = ray_tracing_pipeline_features.rayTracingPipeline ? QUARK_TRUE : QUARK_FALSE,
+            .hardware_ray_tracing = QUARK_FALSE,
+        };
 
         QUARK_U32 score = 0;
 
@@ -83,16 +156,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
         }
         score += (QUARK_U32) (1000 * device_local_memory / (1024 * 1024 * 1024));
 
-        QueueFamilyIndices queue_family_indices = {
-            .graphics = -1,
-            .graphics_count = 0,
-            .present = -1,
-            .present_count = 0,
-            .compute = -1,
-            .compute_count = 0,
-            .transfer = -1,
-            .transfer_count = 0,
-        };
+        QueueFamilyInfo queue_family_info = make_invalid_queue_family_info();
 
         QUARK_U32 queue_family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i], &queue_family_count, nullptr);
@@ -100,35 +164,34 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
         vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i], &queue_family_count, queue_families);
 
         QUARK_U8 min_transfer_score = 255;
-        QUARK_B8 dedicated_transfer_queue = QUARK_FALSE;
         for (QUARK_U32 j = 0; j < queue_family_count; ++j) {
             QUARK_U8 transfer_score = 0;
 
             if (queue_families[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                if (queue_families[j].queueCount > queue_family_indices.graphics_count) {
-                    queue_family_indices.graphics = j;
-                    queue_family_indices.graphics_count = queue_families[j].queueCount;
+                if (queue_families[j].queueCount > queue_family_info.graphics_count) {
+                    queue_family_info.graphics = j;
+                    queue_family_info.graphics_count = queue_families[j].queueCount;
                 }
                 ++transfer_score;
             }
 
             if (queue_families[j].queueFlags & VK_QUEUE_COMPUTE_BIT) {
-                if (queue_families[j].queueCount > queue_family_indices.compute_count) {
-                    queue_family_indices.compute = j;
-                    queue_family_indices.compute_count = queue_families[j].queueCount;
+                if (queue_families[j].queueCount > queue_family_info.compute_count) {
+                    queue_family_info.compute = j;
+                    queue_family_info.compute_count = queue_families[j].queueCount;
                 }
                 ++transfer_score;
             }
 
             if (queue_families[j].queueFlags & VK_QUEUE_TRANSFER_BIT) {
                 if (transfer_score <= min_transfer_score) {
-                    if (queue_families[j].queueCount > queue_family_indices.transfer_count || transfer_score <
+                    if (queue_families[j].queueCount > queue_family_info.transfer_count || transfer_score <
                         min_transfer_score) {
-                        queue_family_indices.transfer = j;
-                        queue_family_indices.transfer_count = queue_families[j].queueCount;
+                        queue_family_info.transfer = j;
+                        queue_family_info.transfer_count = queue_families[j].queueCount;
                         min_transfer_score = transfer_score;
-                        dedicated_transfer_queue =
-                                (queue_families[j].queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == 0;
+                        queue_family_info.dedicated_transfer =
+                            (queue_families[j].queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == 0;
                     }
                 }
             }
@@ -139,34 +202,36 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                 QUARK_FALSE
             );
             if (present_support) {
-                queue_family_indices.present = j;
-                queue_family_indices.present_count = 1;
-                if (queue_family_indices.present == queue_family_indices.graphics) {
-                    --queue_family_indices.graphics_count;
-                } else if (queue_family_indices.present == queue_family_indices.compute) {
-                    --queue_family_indices.compute_count;
-                } else if (queue_family_indices.present == queue_family_indices.transfer) {
-                    --queue_family_indices.transfer_count;
+                queue_family_info.present = j;
+                queue_family_info.present_count = 1;
+                if (queue_family_info.present == queue_family_info.graphics && queue_family_info.graphics_count > 0) {
+                    --queue_family_info.graphics_count;
+                } else if (queue_family_info.present == queue_family_info.compute && queue_family_info.compute_count >
+                    0) {
+                    --queue_family_info.compute_count;
+                } else if (queue_family_info.present == queue_family_info.transfer && queue_family_info.transfer_count
+                    > 0) {
+                    --queue_family_info.transfer_count;
                 }
             }
         }
         if (
-            queue_family_indices.graphics == -1 ||
-            queue_family_indices.present == -1 ||
-            queue_family_indices.compute == -1 ||
-            queue_family_indices.transfer == -1
+            queue_family_info.graphics == QUARK_VK_INVALID_QUEUE_FAMILY_INDEX ||
+            queue_family_info.present == QUARK_VK_INVALID_QUEUE_FAMILY_INDEX ||
+            queue_family_info.compute == QUARK_VK_INVALID_QUEUE_FAMILY_INDEX ||
+            queue_family_info.transfer == QUARK_VK_INVALID_QUEUE_FAMILY_INDEX
         ) {
             continue;
         }
 
-        score += queue_family_indices.graphics_count * 2000;
-        score += queue_family_indices.compute_count * 1000;
-        score += queue_family_indices.transfer_count * 500;
-        if (dedicated_transfer_queue) {
+        score += queue_family_info.graphics_count * 2000;
+        score += queue_family_info.compute_count * 1000;
+        score += queue_family_info.transfer_count * 500;
+        if (queue_family_info.dedicated_transfer) {
             score += 3000;
         }
 
-        SwapchainSupportDetails swapchain_support_details;
+        SwapchainSupportDetails swapchain_support_details = {0};
         VK_CHECK_RETURN(
             vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_devices[i], context->surface, &swapchain_support_details.
                 capabilities),
@@ -190,9 +255,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                 vkGetPhysicalDeviceSurfaceFormatsKHR(physical_devices[i], context->surface, &swapchain_support_details.
                     format_count, swapchain_support_details.formats),
                 {
-                    if (quark_mem_free(swapchain_support_details.formats) == QUARK_FALSE) {
-                        QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-                    }
+                    free_swapchain_support_details(&swapchain_support_details);
                     return QUARK_FALSE;
                 }
             );
@@ -201,9 +264,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
             vkGetPhysicalDeviceSurfacePresentModesKHR(physical_devices[i], context->surface, &swapchain_support_details.
                 present_mode_count, nullptr),
             {
-                if (quark_mem_free(swapchain_support_details.formats) == QUARK_FALSE) {
-                    QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-                }
+                free_swapchain_support_details(&swapchain_support_details);
                 return QUARK_FALSE;
             }
         );
@@ -213,9 +274,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
 
             if (swapchain_support_details.present_modes == nullptr) {
                 QUARK_LOG_ERROR("Failed to allocate memory for swapchain surface present modes");
-                if (quark_mem_free(swapchain_support_details.formats) == QUARK_FALSE) {
-                    QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-                }
+                free_swapchain_support_details(&swapchain_support_details);
                 return QUARK_FALSE;
             }
 
@@ -223,23 +282,13 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                 vkGetPhysicalDeviceSurfacePresentModesKHR(physical_devices[i], context->surface, &
                     swapchain_support_details.present_mode_count, swapchain_support_details.present_modes),
                 {
-                    if (quark_mem_free(swapchain_support_details.formats) == QUARK_FALSE) {
-                        QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-                    }
-                    if (quark_mem_free(swapchain_support_details.present_modes) == QUARK_FALSE) {
-                        QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
-                    }
+                    free_swapchain_support_details(&swapchain_support_details);
                     return QUARK_FALSE;
                 }
             );
         }
         if (swapchain_support_details.format_count == 0 || swapchain_support_details.present_mode_count == 0) {
-            if (quark_mem_free(swapchain_support_details.formats) == QUARK_FALSE) {
-                QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-            }
-            if (quark_mem_free(swapchain_support_details.present_modes) == QUARK_FALSE) {
-                QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
-            }
+            free_swapchain_support_details(&swapchain_support_details);
             continue;
         }
 
@@ -251,12 +300,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
         VK_CHECK_X(
             vkEnumerateDeviceExtensionProperties(physical_devices[i], nullptr, &available_extension_count, nullptr),
             {
-                if (quark_mem_free(swapchain_support_details.formats) == QUARK_FALSE) {
-                    QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-                }
-                if (quark_mem_free(swapchain_support_details.present_modes) == QUARK_FALSE) {
-                    QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
-                }
+                free_swapchain_support_details(&swapchain_support_details);
                 return QUARK_FALSE;
             }
         );
@@ -265,12 +309,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
             vkEnumerateDeviceExtensionProperties(physical_devices[i], nullptr, &available_extension_count,
                 available_extensions),
             {
-                if (quark_mem_free(swapchain_support_details.formats) == QUARK_FALSE) {
-                    QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-                }
-                if (quark_mem_free(swapchain_support_details.present_modes) == QUARK_FALSE) {
-                    QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
-                }
+                free_swapchain_support_details(&swapchain_support_details);
                 return QUARK_FALSE;
             }
         );
@@ -281,53 +320,69 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                 }
             }
             QUARK_LOG_ERROR("Required Vulkan device extension not found: %s", required_extensions[j]);
-            if (quark_mem_free(swapchain_support_details.formats) == QUARK_FALSE) {
-                QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-            }
-            if (quark_mem_free(swapchain_support_details.present_modes) == QUARK_FALSE) {
-                QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
-            }
+            free_swapchain_support_details(&swapchain_support_details);
             goto next_device;
         found:
             // found is just a label to continue the outer loop
         }
 
-        if (!features.samplerAnisotropy) {
+        const QUARK_B8 supports_acceleration_structure_extension = extension_supported(
+            available_extensions, available_extension_count, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
+        );
+        const QUARK_B8 supports_ray_query_extension = extension_supported(
+            available_extensions, available_extension_count, VK_KHR_RAY_QUERY_EXTENSION_NAME
+        );
+        const QUARK_B8 supports_ray_tracing_pipeline_extension = extension_supported(
+            available_extensions, available_extension_count, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME
+        );
+        const QUARK_B8 supports_deferred_host_operations_extension = extension_supported(
+            available_extensions, available_extension_count, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME
+        );
+
+        const QUARK_B8 pipeline_ray_tracing_supported =
+            feature_support.acceleration_structure &&
+            feature_support.ray_tracing_pipeline &&
+            supports_acceleration_structure_extension &&
+            supports_ray_tracing_pipeline_extension &&
+            supports_deferred_host_operations_extension;
+
+        const QUARK_B8 ray_query_supported =
+            feature_support.acceleration_structure &&
+            feature_support.ray_query &&
+            supports_acceleration_structure_extension &&
+            supports_ray_query_extension;
+
+        feature_support.hardware_ray_tracing = pipeline_ray_tracing_supported || ray_query_supported;
+
+        if (!feature_support.core.samplerAnisotropy) {
             QUARK_LOG_ERROR("Device does not support sampler anisotropy");
-            if (quark_mem_free(swapchain_support_details.formats) == QUARK_FALSE) {
-                QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-            }
-            if (quark_mem_free(swapchain_support_details.present_modes) == QUARK_FALSE) {
-                QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
-            }
+            free_swapchain_support_details(&swapchain_support_details);
             continue;
         }
 
         score += properties.limits.maxImageDimension2D / 64;
+        if (feature_support.hardware_ray_tracing) score += 3500;
+        if (pipeline_ray_tracing_supported) score += 2500;
+        if (ray_query_supported) score += 1000;
 
-        if (features.geometryShader) score += 500;
-        if (features.tessellationShader) score += 400;
-        if (features.multiViewport) score += 300;
-        if (features.shaderStorageImageExtendedFormats) score += 200;
-        if (features.shaderFloat64) score += 150;
-        if (features.vertexPipelineStoresAndAtomics) score += 100;
+        if (feature_support.core.geometryShader) score += 500;
+        if (feature_support.core.tessellationShader) score += 400;
+        if (feature_support.core.multiViewport) score += 300;
+        if (feature_support.core.shaderStorageImageExtendedFormats) score += 200;
+        if (feature_support.core.shaderFloat64) score += 150;
+        if (feature_support.core.vertexPipelineStoresAndAtomics) score += 100;
 
         if (score >= best_score) {
             best_score = score;
             context->device.physical_device = physical_devices[i];
-            if (context->device.swapchain_support.formats != nullptr) {
-                if (quark_mem_free(context->device.swapchain_support.formats) == QUARK_FALSE) {
-                    QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
-                }
-            }
-            if (context->device.swapchain_support.present_modes != nullptr) {
-                if (quark_mem_free(context->device.swapchain_support.present_modes) == QUARK_FALSE) {
-                    QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
-                }
-            }
+            free_swapchain_support_details(&context->device.swapchain_support);
             context->device.swapchain_support = swapchain_support_details;
+            context->device.queue_families = queue_family_info;
+            context->device.feature_support = feature_support;
             strncpy(device_name, properties.deviceName, VK_MAX_PHYSICAL_DEVICE_NAME_SIZE - 1);
             device_name[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE - 1] = '\0';
+        } else {
+            free_swapchain_support_details(&swapchain_support_details);
         }
     next_device:
         // next_device is just a label to continue the outer loop
@@ -339,6 +394,17 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
     }
 
     QUARK_LOG_DEBUG("Selected physical device: %s", device_name);
+    QUARK_LOG_DEBUG(
+        "Selected queue families: graphics=%u present=%u compute=%u transfer=%u",
+        context->device.queue_families.graphics,
+        context->device.queue_families.present,
+        context->device.queue_families.compute,
+        context->device.queue_families.transfer
+    );
+    QUARK_LOG_DEBUG(
+        "Hardware ray tracing support: %s",
+        context->device.feature_support.hardware_ray_tracing ? "yes" : "no"
+    );
 
     return QUARK_TRUE;
 }

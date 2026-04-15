@@ -21,9 +21,35 @@ typedef struct SwapchainSupportDetails
     VkPresentModeKHR* present_modes;
 } SwapchainSupportDetails;
 
+#define QUARK_VK_INVALID_QUEUE_FAMILY_INDEX ((QUARK_U32) -1)
+
+typedef struct QueueFamilyInfo
+{
+    QUARK_U32 graphics;
+    QUARK_U32 graphics_count;
+    QUARK_U32 present;
+    QUARK_U32 present_count;
+    QUARK_U32 compute;
+    QUARK_U32 compute_count;
+    QUARK_U32 transfer;
+    QUARK_U32 transfer_count;
+    QUARK_B8 dedicated_transfer;
+} QueueFamilyInfo;
+
+typedef struct DeviceFeatureSupport
+{
+    VkPhysicalDeviceFeatures core;
+    QUARK_B8 acceleration_structure;
+    QUARK_B8 ray_query;
+    QUARK_B8 ray_tracing_pipeline;
+    QUARK_B8 hardware_ray_tracing;
+} DeviceFeatureSupport;
+
 typedef struct VulkanDevice
 {
     SwapchainSupportDetails swapchain_support;
+    QueueFamilyInfo queue_families;
+    DeviceFeatureSupport feature_support;
     VkPhysicalDevice physical_device;
     VkDevice logical_device;
 } VulkanDevice;
