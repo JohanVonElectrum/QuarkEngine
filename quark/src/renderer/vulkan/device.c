@@ -35,6 +35,10 @@ QUARK_B8 destroy_vulkan_device(VulkanContext* context) {
     context->device.feature_support = (DeviceFeatureSupport) {0};
     context->device.physical_device = VK_NULL_HANDLE;
     context->device.logical_device = VK_NULL_HANDLE;
+    context->device.graphics_queue = VK_NULL_HANDLE;
+    context->device.present_queue = VK_NULL_HANDLE;
+    context->device.compute_queue = VK_NULL_HANDLE;
+    context->device.transfer_queue = VK_NULL_HANDLE;
     return QUARK_TRUE;
 }
 
@@ -90,6 +94,10 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
     context->device.queue_families = make_invalid_queue_family_info();
     context->device.feature_support = (DeviceFeatureSupport) {0};
     context->device.physical_device = VK_NULL_HANDLE;
+    context->device.graphics_queue = VK_NULL_HANDLE;
+    context->device.present_queue = VK_NULL_HANDLE;
+    context->device.compute_queue = VK_NULL_HANDLE;
+    context->device.transfer_queue = VK_NULL_HANDLE;
 
     QUARK_U32 physical_device_count = 0;
     VK_CHECK_RETURN(
@@ -566,12 +574,35 @@ QUARK_B8 create_vulkan_logical_device(VulkanContext* context) {
         QUARK_FALSE
     );
 
+    vkGetDeviceQueue(context->device.logical_device, context->device.queue_families.graphics, 0,
+        &context->device.graphics_queue);
+    vkGetDeviceQueue(context->device.logical_device, context->device.queue_families.present, 0,
+        &context->device.present_queue);
+    vkGetDeviceQueue(context->device.logical_device, context->device.queue_families.compute, 0,
+        &context->device.compute_queue);
+    vkGetDeviceQueue(context->device.logical_device, context->device.queue_families.transfer, 0,
+        &context->device.transfer_queue);
+
+    QUARK_ASSERT_RETURN(
+        QUARK_FALSE,
+        context->device.graphics_queue != VK_NULL_HANDLE &&
+        context->device.present_queue != VK_NULL_HANDLE &&
+        context->device.compute_queue != VK_NULL_HANDLE &&
+        context->device.transfer_queue != VK_NULL_HANDLE,
+        "Failed to fetch one or more Vulkan device queues"
+    );
+
     QUARK_LOG_DEBUG("Created Vulkan logical device with %u queue families", unique_family_count);
 
     return QUARK_TRUE;
 }
 
 QUARK_B8 destroy_vulkan_logical_device(VulkanContext* context) {
+    context->device.graphics_queue = VK_NULL_HANDLE;
+    context->device.present_queue = VK_NULL_HANDLE;
+    context->device.compute_queue = VK_NULL_HANDLE;
+    context->device.transfer_queue = VK_NULL_HANDLE;
+
     if (context->device.logical_device != VK_NULL_HANDLE) {
         vkDestroyDevice(context->device.logical_device, context->allocator);
         context->device.logical_device = VK_NULL_HANDLE;

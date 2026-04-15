@@ -75,6 +75,10 @@ typedef struct VulkanDevice
     DeviceFeatureSupport feature_support;
     VkPhysicalDevice physical_device;
     VkDevice logical_device;
+    VkQueue graphics_queue;
+    VkQueue present_queue;
+    VkQueue compute_queue;
+    VkQueue transfer_queue;
 } VulkanDevice;
 
 typedef struct
