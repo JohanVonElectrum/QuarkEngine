@@ -201,18 +201,9 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                 vkGetPhysicalDeviceSurfaceSupportKHR(physical_devices[i], j, context->surface, &present_support),
                 QUARK_FALSE
             );
-            if (present_support) {
+            if (present_support && (queue_family_info.present == QUARK_VK_INVALID_QUEUE_FAMILY_INDEX || queue_families[j].queueCount < queue_family_info.present_count)) {
                 queue_family_info.present = j;
-                queue_family_info.present_count = 1;
-                if (queue_family_info.present == queue_family_info.graphics && queue_family_info.graphics_count > 0) {
-                    --queue_family_info.graphics_count;
-                } else if (queue_family_info.present == queue_family_info.compute && queue_family_info.compute_count >
-                    0) {
-                    --queue_family_info.compute_count;
-                } else if (queue_family_info.present == queue_family_info.transfer && queue_family_info.transfer_count
-                    > 0) {
-                    --queue_family_info.transfer_count;
-                }
+                queue_family_info.present_count = queue_families[j].queueCount;
             }
         }
         if (
