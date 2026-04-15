@@ -13,6 +13,30 @@ static QUARK_B8 extension_supported(
 );
 
 QUARK_B8 select_physical_device(VulkanContext* context);
+QUARK_B8 create_vulkan_logical_device(VulkanContext* context);
+QUARK_B8 destroy_vulkan_logical_device(VulkanContext* context);
+
+QUARK_B8 create_vulkan_device(VulkanContext* context) {
+    if (!select_physical_device(context)) {
+        return QUARK_FALSE;
+    }
+
+    if (!create_vulkan_logical_device(context)) {
+        return QUARK_FALSE;
+    }
+
+    return QUARK_TRUE;
+}
+
+QUARK_B8 destroy_vulkan_device(VulkanContext* context) {
+    destroy_vulkan_logical_device(context);
+    free_swapchain_support_details(&context->device.swapchain_support);
+    context->device.queue_families = make_invalid_queue_family_info();
+    context->device.feature_support = (DeviceFeatureSupport) {0};
+    context->device.physical_device = VK_NULL_HANDLE;
+    context->device.logical_device = VK_NULL_HANDLE;
+    return QUARK_TRUE;
+}
 
 static QueueFamilyInfo make_invalid_queue_family_info() {
     return (QueueFamilyInfo) {
@@ -59,19 +83,6 @@ static QUARK_B8 extension_supported(
     }
 
     return QUARK_FALSE;
-}
-
-QUARK_B8 create_vulkan_device(VulkanContext* context) {
-    return select_physical_device(context);
-}
-
-QUARK_B8 destroy_vulkan_device(VulkanContext* context) {
-    free_swapchain_support_details(&context->device.swapchain_support);
-    context->device.queue_families = make_invalid_queue_family_info();
-    context->device.feature_support = (DeviceFeatureSupport) {0};
-    context->device.physical_device = VK_NULL_HANDLE;
-    context->device.logical_device = VK_NULL_HANDLE;
-    return QUARK_TRUE;
 }
 
 QUARK_B8 select_physical_device(VulkanContext* context) {
@@ -397,5 +408,174 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
         context->device.feature_support.hardware_ray_tracing ? "yes" : "no"
     );
 
+    return QUARK_TRUE;
+}
+
+QUARK_B8 create_vulkan_logical_device(VulkanContext* context) {
+    const QUARK_U32 unique_queue_families[] = {
+        context->device.queue_families.graphics,
+        context->device.queue_families.present,
+        context->device.queue_families.compute,
+        context->device.queue_families.transfer,
+    };
+    QUARK_U32 unique_family_count = 0;
+    QUARK_U32 deduped_families[4];
+
+    for (QUARK_U32 i = 0; i < 4; ++i) {
+        QUARK_B8 already_added = QUARK_FALSE;
+        for (QUARK_U32 j = 0; j < unique_family_count; ++j) {
+            if (deduped_families[j] == unique_queue_families[i]) {
+                already_added = QUARK_TRUE;
+                break;
+            }
+        }
+        if (!already_added && unique_queue_families[i] != QUARK_VK_INVALID_QUEUE_FAMILY_INDEX) {
+            deduped_families[unique_family_count++] = unique_queue_families[i];
+        }
+    }
+
+    VkDeviceQueueCreateInfo queue_create_infos[unique_family_count];
+    constexpr float queue_priorities[] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+
+    for (QUARK_U32 i = 0; i < unique_family_count; ++i) {
+        QUARK_U32 queue_count = 0;
+
+        if (deduped_families[i] == context->device.queue_families.graphics) {
+            queue_count = context->device.queue_families.graphics_count;
+        } else if (deduped_families[i] == context->device.queue_families.present) {
+            queue_count = context->device.queue_families.present_count;
+        } else if (deduped_families[i] == context->device.queue_families.compute) {
+            queue_count = context->device.queue_families.compute_count;
+        } else if (deduped_families[i] == context->device.queue_families.transfer) {
+            queue_count = context->device.queue_families.transfer_count;
+        }
+
+        if (queue_count == 0) queue_count = 1;
+
+        queue_create_infos[i] = (VkDeviceQueueCreateInfo) {
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .queueFamilyIndex = deduped_families[i],
+            .queueCount = queue_count,
+            .pQueuePriorities = queue_priorities,
+        };
+    }
+
+    const char* enabled_extensions[5];
+    QUARK_U32 enabled_extension_count = 0;
+
+    QUARK_U32 available_extension_count = 0;
+    VK_CHECK_RETURN(
+        vkEnumerateDeviceExtensionProperties(context->device.physical_device, nullptr, &available_extension_count,
+            nullptr),
+        QUARK_FALSE
+    );
+
+    VkExtensionProperties available_extensions[available_extension_count];
+    VK_CHECK_RETURN(
+        vkEnumerateDeviceExtensionProperties(context->device.physical_device, nullptr, &available_extension_count,
+            available_extensions),
+        QUARK_FALSE
+    );
+
+    enabled_extensions[enabled_extension_count++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+
+    if (context->device.feature_support.hardware_ray_tracing) {
+        if (context->device.feature_support.acceleration_structure &&
+            extension_supported(available_extensions, available_extension_count,
+                VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)) {
+            enabled_extensions[enabled_extension_count++] = VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME;
+        }
+
+        if (context->device.feature_support.ray_query &&
+            extension_supported(available_extensions, available_extension_count,
+                VK_KHR_RAY_QUERY_EXTENSION_NAME)) {
+            enabled_extensions[enabled_extension_count++] = VK_KHR_RAY_QUERY_EXTENSION_NAME;
+        }
+
+        if (context->device.feature_support.ray_tracing_pipeline &&
+            extension_supported(available_extensions, available_extension_count,
+                VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)) {
+            enabled_extensions[enabled_extension_count++] = VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME;
+        }
+
+        if (context->device.feature_support.ray_tracing_pipeline &&
+            extension_supported(available_extensions, available_extension_count,
+                VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)) {
+            enabled_extensions[enabled_extension_count++] = VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME;
+        }
+    }
+
+    QUARK_LOG_DEBUG("Enabled device extensions:");
+    for (QUARK_U32 i = 0; i < enabled_extension_count; ++i) {
+        QUARK_LOG_DEBUG("  %s", enabled_extensions[i]);
+    }
+
+    VkPhysicalDeviceFeatures2 enabled_features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+        .pNext = nullptr,
+        .features = context->device.feature_support.core,
+    };
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR acceleration_structure_features = {0};
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR ray_tracing_pipeline_features = {0};
+    VkPhysicalDeviceRayQueryFeaturesKHR ray_query_features = {0};
+
+    void** last_pNext = &enabled_features.pNext;
+
+    if (context->device.feature_support.acceleration_structure) {
+        acceleration_structure_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+        acceleration_structure_features.pNext = nullptr;
+        acceleration_structure_features.accelerationStructure = VK_TRUE;
+        *last_pNext = &acceleration_structure_features;
+        last_pNext = &acceleration_structure_features.pNext;
+    }
+
+    if (context->device.feature_support.ray_tracing_pipeline) {
+        ray_tracing_pipeline_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+        ray_tracing_pipeline_features.pNext = nullptr;
+        ray_tracing_pipeline_features.rayTracingPipeline = VK_TRUE;
+        *last_pNext = &ray_tracing_pipeline_features;
+        last_pNext = &ray_tracing_pipeline_features.pNext;
+    }
+
+    if (context->device.feature_support.ray_query) {
+        ray_query_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+        ray_query_features.pNext = nullptr;
+        ray_query_features.rayQuery = VK_TRUE;
+        *last_pNext = &ray_query_features;
+    }
+
+    const VkDeviceCreateInfo device_create_info = {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .pNext = &enabled_features,
+        .flags = 0,
+        .queueCreateInfoCount = unique_family_count,
+        .pQueueCreateInfos = queue_create_infos,
+        .enabledLayerCount = 0,
+        .ppEnabledLayerNames = nullptr,
+        .enabledExtensionCount = enabled_extension_count,
+        .ppEnabledExtensionNames = enabled_extensions,
+        .pEnabledFeatures = nullptr, // pNext
+    };
+
+    VK_CHECK_RETURN(
+        vkCreateDevice(context->device.physical_device, &device_create_info, context->allocator,
+            &context->device.logical_device),
+        QUARK_FALSE
+    );
+
+    QUARK_LOG_DEBUG("Created Vulkan logical device with %u queue families", unique_family_count);
+
+    return QUARK_TRUE;
+}
+
+QUARK_B8 destroy_vulkan_logical_device(VulkanContext* context) {
+    if (context->device.logical_device != VK_NULL_HANDLE) {
+        vkDestroyDevice(context->device.logical_device, context->allocator);
+        context->device.logical_device = VK_NULL_HANDLE;
+        QUARK_LOG_DEBUG("Destroyed Vulkan logical device");
+    }
     return QUARK_TRUE;
 }
