@@ -33,8 +33,9 @@ QUARK_B8 BACKEND_PREFIXED(init_renderer_backend)(
 QUARK_B8 BACKEND_PREFIXED(shutdown_renderer_backend)();
 
 QUARK_B8 BACKEND_PREFIXED(init_renderer_window)(GLFWwindow* window);
-QUARK_B8 BACKEND_PREFIXED(shutdown_renderer_window)(GLFWwindow* window);
+QUARK_B8 BACKEND_PREFIXED(shutdown_renderer_window)();
 QUARK_B8 BACKEND_PREFIXED(render_renderer_frame)();
+void BACKEND_PREFIXED(on_framebuffer_resized)();
 
 #undef BACKEND_COMMON
 #undef BACKEND_PREFIX

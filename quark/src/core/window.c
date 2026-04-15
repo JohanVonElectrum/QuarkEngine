@@ -12,6 +12,12 @@ void error_callback(int error, const char* description) {
     QUARK_LOG_ERROR("GLFW Error: %s\n", description);
 }
 
+void framebuffer_resize_callback(GLFWwindow* window, int width, int height) {
+    (void)width;
+    (void)height;
+    on_framebuffer_resized();
+}
+
 QUARK_B8 init_windowing() {
     const QUARK_B8 initialized = glfwInit();
 
@@ -78,6 +84,7 @@ QuarkWindow* create_window(const WindowCreateInfo* create_info) {
     quark_window->handle = window;
 
     glfwSetWindowUserPointer(window, quark_window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_resize_callback);
 
     return quark_window;
 }
@@ -90,7 +97,7 @@ QUARK_B8 destroy_window(QuarkWindow* window) {
     );
 
     GLFWwindow* window_handle = window->handle;
-    shutdown_renderer_window(window_handle);
+    shutdown_renderer_window();
     quark_mem_free(window);
     EXECUTE_UNHANDLED(glfwDestroyWindow(window_handle));
 }

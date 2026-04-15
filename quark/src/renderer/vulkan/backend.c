@@ -13,6 +13,36 @@
 #include <string.h>
 
 static VulkanContext context;
+static GLFWwindow* s_current_window = nullptr;
+
+static QUARK_B8 vk_recreate_swapchain() {
+    int framebuffer_width = 0;
+    int framebuffer_height = 0;
+    glfwGetFramebufferSize(s_current_window, &framebuffer_width, &framebuffer_height);
+
+    while (framebuffer_width == 0 || framebuffer_height == 0) {
+        glfwGetFramebufferSize(s_current_window, &framebuffer_width, &framebuffer_height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(context.device.logical_device);
+
+    destroy_vulkan_swapchain(&context);
+
+    if (!create_vulkan_swapchain(&context, (QUARK_U32) framebuffer_width, (QUARK_U32) framebuffer_height)) {
+        QUARK_LOG_ERROR("Failed to recreate swapchain");
+        return QUARK_FALSE;
+    }
+
+    context.swapchain.framebuffer_resized = QUARK_FALSE;
+
+    QUARK_LOG_DEBUG("Swapchain recreated with dimensions %ux%u", framebuffer_width, framebuffer_height);
+    return QUARK_TRUE;
+}
+
+void vk_on_framebuffer_resized() {
+    context.swapchain.framebuffer_resized = QUARK_TRUE;
+}
 
 #ifdef QUARK_DEBUG
 VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
@@ -166,6 +196,8 @@ QUARK_B8 vk_shutdown_renderer_backend() {
 }
 
 QUARK_B8 vk_init_renderer_window(GLFWwindow* window) {
+    s_current_window = window;
+
     VK_CHECK_RETURN(
         glfwCreateWindowSurface(context.instance, window, context.allocator, &context.surface),
         QUARK_FALSE
@@ -195,11 +227,14 @@ QUARK_B8 vk_init_renderer_window(GLFWwindow* window) {
     return QUARK_TRUE;
 }
 
-QUARK_B8 vk_shutdown_renderer_window(GLFWwindow* window) {
-    destroy_vulkan_swapchain(&context);
+QUARK_B8 vk_shutdown_renderer_window() {
+    QUARK_B8 success = QUARK_TRUE;
+    success = success && destroy_vulkan_swapchain(&context);
     vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
     context.surface = VK_NULL_HANDLE;
-    return destroy_vulkan_device(&context);
+    success = success && destroy_vulkan_device(&context);
+    s_current_window = nullptr;
+    return success;
 }
 
 QUARK_B8 vk_render_renderer_frame() {
@@ -207,7 +242,6 @@ QUARK_B8 vk_render_renderer_frame() {
     VkFence frame_fence = context.swapchain.in_flight_fences[frame_index];
 
     VK_CHECK_RETURN(vkWaitForFences(context.device.logical_device, 1, &frame_fence, VK_TRUE, UINT64_MAX), QUARK_FALSE);
-    VK_CHECK_RETURN(vkResetFences(context.device.logical_device, 1, &frame_fence), QUARK_FALSE);
 
     QUARK_U32 image_index = 0;
     const VkResult acquire_result = vkAcquireNextImageKHR(
@@ -219,12 +253,14 @@ QUARK_B8 vk_render_renderer_frame() {
         &image_index
     );
     if (acquire_result == VK_ERROR_OUT_OF_DATE_KHR) {
+        vk_recreate_swapchain();
         return QUARK_TRUE;
     }
     if (acquire_result != VK_SUCCESS && acquire_result != VK_SUBOPTIMAL_KHR) {
         QUARK_LOG_ERROR("Failed to acquire swapchain image: %u", acquire_result);
         return QUARK_FALSE;
     }
+    VK_CHECK_RETURN(vkResetFences(context.device.logical_device, 1, &frame_fence), QUARK_FALSE);
 
     VkCommandBuffer command_buffer = context.swapchain.command_buffers[frame_index];
     VK_CHECK_RETURN(vkResetCommandBuffer(command_buffer, 0), QUARK_FALSE);
@@ -305,12 +341,17 @@ QUARK_B8 vk_render_renderer_frame() {
     };
 
     const VkResult present_result = vkQueuePresentKHR(context.device.present_queue, &present_info);
-    if (present_result != VK_SUCCESS && present_result != VK_SUBOPTIMAL_KHR && present_result != VK_ERROR_OUT_OF_DATE_KHR) {
+    if (present_result == VK_ERROR_OUT_OF_DATE_KHR || present_result == VK_SUBOPTIMAL_KHR || context.swapchain.framebuffer_resized) {
+        if (!vk_recreate_swapchain()) {
+            return QUARK_FALSE;
+        }
+    } else if (present_result != VK_SUCCESS) {
         QUARK_LOG_ERROR("Failed to present swapchain image: %u", present_result);
         return QUARK_FALSE;
     }
 
     context.swapchain.current_frame = (context.swapchain.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+
     return QUARK_TRUE;
 }
 

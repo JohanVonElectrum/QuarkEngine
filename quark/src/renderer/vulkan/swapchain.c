@@ -37,7 +37,16 @@ QUARK_B8 create_vulkan_swapchain(
         "Cannot create a Vulkan swapchain without a logical device"
     );
 
-    const SwapchainSupportDetails* support = &context->device.swapchain_support;
+    SwapchainSupportDetails* support = &context->device.swapchain_support;
+    VK_CHECK_RETURN(
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+            context->device.physical_device,
+            context->surface,
+            &support->capabilities
+        ),
+        QUARK_FALSE
+    );
+
     QUARK_ASSERT_RETURN(
         QUARK_FALSE,
         support->format_count != 0 && support->present_mode_count != 0,

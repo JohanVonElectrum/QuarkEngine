@@ -66,6 +66,7 @@ typedef struct VulkanSwapchain
     VkSemaphore* render_finished_semaphores;
     VkFence* in_flight_fences;
     QUARK_U32 current_frame;
+    QUARK_B8 framebuffer_resized;
 } VulkanSwapchain;
 
 typedef struct VulkanDevice
