@@ -537,7 +537,7 @@ static QUARK_B8 create_swapchain_framebuffers(VulkanContext* context, VulkanSwap
 
 static QUARK_B8 create_swapchain_sync_objects(VulkanContext* context, VulkanSwapchain* swapchain) {
     swapchain->image_available_semaphores = quark_mem_calloc(MAX_FRAMES_IN_FLIGHT, sizeof(VkSemaphore));
-    swapchain->render_finished_semaphores = quark_mem_calloc(MAX_FRAMES_IN_FLIGHT, sizeof(VkSemaphore));
+    swapchain->render_finished_semaphores = quark_mem_calloc(swapchain->image_count, sizeof(VkSemaphore));
     swapchain->in_flight_fences = quark_mem_calloc(MAX_FRAMES_IN_FLIGHT, sizeof(VkFence));
 
     if (
@@ -568,13 +568,16 @@ static QUARK_B8 create_swapchain_sync_objects(VulkanContext* context, VulkanSwap
             }
         );
         VK_CHECK_X(
-            vkCreateSemaphore(context->device.logical_device, &semaphore_create_info, context->allocator, &swapchain->render_finished_semaphores[i]),
+            vkCreateFence(context->device.logical_device, &fence_create_info, context->allocator, &swapchain->in_flight_fences[i]),
             {
                 return QUARK_FALSE;
             }
         );
+    }
+
+    for (QUARK_U32 i = 0; i < swapchain->image_count; ++i) {
         VK_CHECK_X(
-            vkCreateFence(context->device.logical_device, &fence_create_info, context->allocator, &swapchain->in_flight_fences[i]),
+            vkCreateSemaphore(context->device.logical_device, &semaphore_create_info, context->allocator, &swapchain->render_finished_semaphores[i]),
             {
                 return QUARK_FALSE;
             }
@@ -613,7 +616,7 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
 
     if (swapchain->render_finished_semaphores != nullptr) {
         if (device != VK_NULL_HANDLE) {
-            for (QUARK_U32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            for (QUARK_U32 i = 0; i < swapchain->image_count; ++i) {
                 if (swapchain->render_finished_semaphores[i] != VK_NULL_HANDLE) {
                     vkDestroySemaphore(device, swapchain->render_finished_semaphores[i], context->allocator);
                 }

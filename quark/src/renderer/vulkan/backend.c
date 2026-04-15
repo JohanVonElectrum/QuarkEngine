@@ -202,6 +202,118 @@ QUARK_B8 vk_shutdown_renderer_window(GLFWwindow* window) {
     return destroy_vulkan_device(&context);
 }
 
+QUARK_B8 vk_render_renderer_frame() {
+    const QUARK_U32 frame_index = context.swapchain.current_frame;
+    VkFence frame_fence = context.swapchain.in_flight_fences[frame_index];
+
+    VK_CHECK_RETURN(vkWaitForFences(context.device.logical_device, 1, &frame_fence, VK_TRUE, UINT64_MAX), QUARK_FALSE);
+    VK_CHECK_RETURN(vkResetFences(context.device.logical_device, 1, &frame_fence), QUARK_FALSE);
+
+    QUARK_U32 image_index = 0;
+    const VkResult acquire_result = vkAcquireNextImageKHR(
+        context.device.logical_device,
+        context.swapchain.swapchain,
+        UINT64_MAX,
+        context.swapchain.image_available_semaphores[frame_index],
+        VK_NULL_HANDLE,
+        &image_index
+    );
+    if (acquire_result == VK_ERROR_OUT_OF_DATE_KHR) {
+        return QUARK_TRUE;
+    }
+    if (acquire_result != VK_SUCCESS && acquire_result != VK_SUBOPTIMAL_KHR) {
+        QUARK_LOG_ERROR("Failed to acquire swapchain image: %u", acquire_result);
+        return QUARK_FALSE;
+    }
+
+    VkCommandBuffer command_buffer = context.swapchain.command_buffers[frame_index];
+    VK_CHECK_RETURN(vkResetCommandBuffer(command_buffer, 0), QUARK_FALSE);
+
+    const VkCommandBufferBeginInfo begin_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .pInheritanceInfo = nullptr,
+    };
+    VK_CHECK_RETURN(vkBeginCommandBuffer(command_buffer, &begin_info), QUARK_FALSE);
+
+    const VkClearValue clear_values[] = {
+        {
+            .color = {
+                .float32 = {0.08f, 0.09f, 0.12f, 1.0f},
+            },
+        },
+        {
+            .depthStencil = {
+                .depth = 1.0f,
+                .stencil = 0,
+            },
+        },
+    };
+    const VkRenderPassBeginInfo render_pass_begin_info = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .pNext = nullptr,
+        .renderPass = context.swapchain.render_pass,
+        .framebuffer = context.swapchain.framebuffers[image_index],
+        .renderArea = {
+            .offset = {.x = 0, .y = 0},
+            .extent = context.swapchain.extent,
+        },
+        .clearValueCount = (QUARK_U32) (sizeof(clear_values) / sizeof(clear_values[0])),
+        .pClearValues = clear_values,
+    };
+
+    vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdEndRenderPass(command_buffer);
+
+    VK_CHECK_RETURN(vkEndCommandBuffer(command_buffer), QUARK_FALSE);
+
+    const VkSemaphore wait_semaphores[] = {
+        context.swapchain.image_available_semaphores[frame_index],
+    };
+    const VkPipelineStageFlags wait_stages[] = {
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+    };
+    const VkSemaphore signal_semaphores[] = {
+        context.swapchain.render_finished_semaphores[image_index],
+    };
+    const VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .waitSemaphoreCount = (QUARK_U32) (sizeof(wait_semaphores) / sizeof(wait_semaphores[0])),
+        .pWaitSemaphores = wait_semaphores,
+        .pWaitDstStageMask = wait_stages,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &command_buffer,
+        .signalSemaphoreCount = (QUARK_U32) (sizeof(signal_semaphores) / sizeof(signal_semaphores[0])),
+        .pSignalSemaphores = signal_semaphores,
+    };
+    VK_CHECK_RETURN(vkQueueSubmit(context.device.graphics_queue, 1, &submit_info, frame_fence), QUARK_FALSE);
+
+    const VkSwapchainKHR swapchains[] = {
+        context.swapchain.swapchain,
+    };
+    const VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .pNext = nullptr,
+        .waitSemaphoreCount = (QUARK_U32) (sizeof(signal_semaphores) / sizeof(signal_semaphores[0])),
+        .pWaitSemaphores = signal_semaphores,
+        .swapchainCount = (QUARK_U32) (sizeof(swapchains) / sizeof(swapchains[0])),
+        .pSwapchains = swapchains,
+        .pImageIndices = &image_index,
+        .pResults = nullptr,
+    };
+
+    const VkResult present_result = vkQueuePresentKHR(context.device.present_queue, &present_info);
+    if (present_result != VK_SUCCESS && present_result != VK_SUBOPTIMAL_KHR && present_result != VK_ERROR_OUT_OF_DATE_KHR) {
+        QUARK_LOG_ERROR("Failed to present swapchain image: %u", present_result);
+        return QUARK_FALSE;
+    }
+
+    context.swapchain.current_frame = (context.swapchain.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+    return QUARK_TRUE;
+}
+
 #ifdef QUARK_DEBUG
 VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
     const VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,

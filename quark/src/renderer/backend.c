@@ -50,3 +50,14 @@ QUARK_B8 shutdown_renderer_window(GLFWwindow* window) {
             return QUARK_FALSE;
     }
 }
+
+QUARK_B8 render_renderer_frame() {
+    switch (backend_kind) {
+        case QUARK_RENDERER_BACKEND_VK:
+            return vk_render_renderer_frame();
+        default:
+            QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend_kind);
+            return QUARK_FALSE;
+    }
+}
+

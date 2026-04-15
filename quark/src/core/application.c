@@ -96,6 +96,12 @@ QUARK_B8 run_application(Application* application) {
 
             if (window_should_close(application->window)) {
                 application->flags |= APPLICATION_FLAG_SHOULD_CLOSE;
+                continue;
+            }
+
+            if (!render_renderer_frame()) {
+                QUARK_LOG_ERROR("Failed to render frame");
+                return QUARK_FALSE;
             }
         }
     }
