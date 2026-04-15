@@ -12,6 +12,8 @@
 #define VK_CHECK(expr) VK_CHECK_X(expr, {})
 #define VK_CHECK_RETURN(expr, ret) VK_CHECK_X(expr, { return ret; })
 
+#define MAX_FRAMES_IN_FLIGHT 2
+
 typedef struct SwapchainSupportDetails
 {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -45,6 +47,27 @@ typedef struct DeviceFeatureSupport
     QUARK_B8 hardware_ray_tracing;
 } DeviceFeatureSupport;
 
+typedef struct VulkanSwapchain
+{
+    VkSwapchainKHR swapchain;
+    VkFormat format;
+    VkExtent2D extent;
+    QUARK_U32 image_count;
+    VkImage* images;
+    VkImageView* image_views;
+    VkImage depth_image;
+    VkDeviceMemory depth_image_memory;
+    VkImageView depth_image_view;
+    VkRenderPass render_pass;
+    VkFramebuffer* framebuffers;
+    VkCommandPool command_pool;
+    VkCommandBuffer* command_buffers;
+    VkSemaphore* image_available_semaphores;
+    VkSemaphore* render_finished_semaphores;
+    VkFence* in_flight_fences;
+    QUARK_U32 current_frame;
+} VulkanSwapchain;
+
 typedef struct VulkanDevice
 {
     SwapchainSupportDetails swapchain_support;
@@ -62,5 +85,6 @@ typedef struct
     VkDebugUtilsMessengerEXT debug_messenger;
 #endif // QUARK_DEBUG
     VkSurfaceKHR surface;
+    VulkanSwapchain swapchain;
     VulkanDevice device;
 } VulkanContext;

@@ -7,6 +7,7 @@ add_library(quark SHARED
     src/renderer/backend.c
     src/renderer/vulkan/backend.c
     src/renderer/vulkan/device.c
+    src/renderer/vulkan/swapchain.c
 )
 
 target_include_directories(quark PUBLIC

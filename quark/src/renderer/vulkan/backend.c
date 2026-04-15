@@ -1,6 +1,7 @@
 #include "backend.h"
 
 #include "device.h"
+#include "swapchain.h"
 #include "vk.h"
 #include "../../platform/memory.h"
 
@@ -170,15 +171,34 @@ QUARK_B8 vk_init_renderer_window(GLFWwindow* window) {
         QUARK_FALSE
     );
 
-    create_vulkan_device(&context);
+    if (!create_vulkan_device(&context)) {
+        vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
+        context.surface = VK_NULL_HANDLE;
+        return QUARK_FALSE;
+    }
 
-    // TODO: create window rendering objects
+    int framebuffer_width = 0;
+    int framebuffer_height = 0;
+    glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
+
+    if (!create_vulkan_swapchain(
+            &context,
+            framebuffer_width > 0 ? (QUARK_U32) framebuffer_width : 1,
+            framebuffer_height > 0 ? (QUARK_U32) framebuffer_height : 1
+        )) {
+        destroy_vulkan_device(&context);
+        vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
+        context.surface = VK_NULL_HANDLE;
+        return QUARK_FALSE;
+    }
+
     return QUARK_TRUE;
 }
 
 QUARK_B8 vk_shutdown_renderer_window(GLFWwindow* window) {
-    // TODO: destroy window rendering objects
+    destroy_vulkan_swapchain(&context);
     vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
+    context.surface = VK_NULL_HANDLE;
     return destroy_vulkan_device(&context);
 }
 
