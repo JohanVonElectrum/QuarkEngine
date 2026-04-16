@@ -13,6 +13,8 @@ typedef struct GLFWwindow GLFWwindow;
 #ifndef QUARK_RENDERER_BACKEND_FUNCTIONS
 #define QUARK_RENDERER_BACKEND_FUNCTIONS
 
+#include "../core/camera.h"
+
 #include <quark/macro.h>
 #include <quark/primitives.h>
 
@@ -34,7 +36,7 @@ QUARK_B8 BACKEND_PREFIXED(shutdown_renderer_backend)();
 
 QUARK_B8 BACKEND_PREFIXED(init_renderer_window)(GLFWwindow* window);
 QUARK_B8 BACKEND_PREFIXED(shutdown_renderer_window)();
-QUARK_B8 BACKEND_PREFIXED(render_renderer_frame)();
+QUARK_B8 BACKEND_PREFIXED(render_renderer_frame)(const Camera* camera);
 void BACKEND_PREFIXED(on_framebuffer_resized)();
 
 #undef BACKEND_COMMON

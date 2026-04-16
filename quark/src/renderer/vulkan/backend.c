@@ -227,7 +227,20 @@ QUARK_B8 vk_shutdown_renderer_window() {
     return success;
 }
 
-QUARK_B8 vk_render_renderer_frame() {
+QUARK_B8 vk_render_renderer_frame(const Camera* camera) {
+    QUARK_ASSERT_RETURN(QUARK_FALSE, camera != nullptr, "Invalid camera pointer");
+
+    if (context.swapchain.extent.width == 0 || context.swapchain.extent.height == 0) {
+        return QUARK_TRUE;
+    }
+
+    const QUARK_F32 aspect_ratio = (QUARK_F32) context.swapchain.extent.width / (QUARK_F32) context.swapchain.extent.height;
+    mat4 view_projection;
+    if (!camera_get_view_projection_matrix(camera, aspect_ratio, view_projection)) {
+        QUARK_LOG_ERROR("Failed to compute camera view-projection matrix");
+        return QUARK_FALSE;
+    }
+
     const QUARK_U32 frame_index = context.swapchain.current_frame;
     VkFence frame_fence = context.swapchain.in_flight_fences[frame_index];
 
@@ -291,6 +304,14 @@ QUARK_B8 vk_render_renderer_frame() {
 
     vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, context.graphics_pipeline);
+    vkCmdPushConstants(
+        command_buffer,
+        context.pipeline_layout,
+        VK_SHADER_STAGE_VERTEX_BIT,
+        0,
+        (QUARK_U32) sizeof(mat4),
+        view_projection
+    );
     vkCmdDraw(command_buffer, 3, 1, 0, 0);
     vkCmdEndRenderPass(command_buffer);
 
@@ -643,14 +664,20 @@ static QUARK_B8 create_vulkan_graphics_pipeline(VulkanContext* context) {
         .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
     };
 
+    const VkPushConstantRange camera_push_constant_range = {
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        .offset = 0,
+        .size = (QUARK_U32) sizeof(mat4),
+    };
+
     const VkPipelineLayoutCreateInfo pipeline_layout_create_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
         .setLayoutCount = 0,
         .pSetLayouts = nullptr,
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges = nullptr,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &camera_push_constant_range,
     };
 
     VK_CHECK_X(

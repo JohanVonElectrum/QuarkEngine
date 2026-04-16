@@ -1,5 +1,9 @@
 #version 450
 
+layout(push_constant) uniform CameraData {
+    mat4 view_projection;
+} camera_data;
+
 layout(location = 0) out vec3 out_color;
 
 void main() {
@@ -15,7 +19,7 @@ void main() {
         vec3(0.1, 0.3, 1.0)
     );
 
-    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+    gl_Position = camera_data.view_projection * vec4(positions[gl_VertexIndex], 0.0, 1.0);
     out_color = colors[gl_VertexIndex];
 }
 

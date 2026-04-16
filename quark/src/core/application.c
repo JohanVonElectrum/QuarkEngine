@@ -10,6 +10,7 @@ struct Application
 {
     const char* name;
     Version version;
+    Camera camera;
     QUARK_U8 flags;
     QuarkWindow* window;
 };
@@ -36,6 +37,7 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
 
     s_application.name = create_info->name;
     s_application.version = create_info->version;
+    s_application.camera = create_info->camera;
     s_application.flags = APPLICATION_FLAG_RUNNING;
     if (headless) {
         s_application.flags |= APPLICATION_FLAG_HEADLESS;
@@ -99,7 +101,7 @@ QUARK_B8 run_application(Application* application) {
                 continue;
             }
 
-            if (!render_renderer_frame()) {
+            if (!render_renderer_frame(&application->camera)) {
                 QUARK_LOG_ERROR("Failed to render frame");
                 return QUARK_FALSE;
             }

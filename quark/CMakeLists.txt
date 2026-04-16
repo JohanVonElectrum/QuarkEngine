@@ -1,5 +1,6 @@
 add_library(quark SHARED
     src/core/application.c
+    src/core/camera.c
     src/core/window.c
     src/core/tracing.c
     src/core/engine.c
@@ -44,6 +45,16 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 set(GLFW_LIBRARY_TYPE SHARED CACHE STRING "" FORCE)
 FetchContent_MakeAvailable(glfw)
 target_link_libraries(quark PRIVATE glfw)
+
+FetchContent_Declare(
+    cglm
+    GIT_REPOSITORY https://github.com/recp/cglm.git
+    GIT_TAG v0.9.6
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(cglm)
+target_include_directories(quark PUBLIC ${cglm_SOURCE_DIR}/include)
+target_link_libraries(quark PRIVATE cglm)
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(quark PRIVATE Vulkan::Vulkan)

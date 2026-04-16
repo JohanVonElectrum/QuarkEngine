@@ -51,10 +51,10 @@ QUARK_B8 shutdown_renderer_window() {
     }
 }
 
-QUARK_B8 render_renderer_frame() {
+QUARK_B8 render_renderer_frame(const Camera* camera) {
     switch (backend_kind) {
         case QUARK_RENDERER_BACKEND_VK:
-            return vk_render_renderer_frame();
+            return vk_render_renderer_frame(camera);
         default:
             QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend_kind);
             return QUARK_FALSE;

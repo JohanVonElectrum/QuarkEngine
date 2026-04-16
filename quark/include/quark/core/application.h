@@ -2,6 +2,7 @@
 
 #include <quark/api.h>
 #include <quark/primitives.h>
+#include <quark/core/camera.h>
 #include <quark/core/window.h>
 
 typedef struct
@@ -15,6 +16,7 @@ typedef struct
 {
     const char* name;
     Version version;
+    Camera camera;
     WindowCreateInfo window;
 } ApplicationCreateInfo;
 
