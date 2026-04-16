@@ -92,4 +92,6 @@ typedef struct
     VkSurfaceKHR surface;
     VulkanSwapchain swapchain;
     VulkanDevice device;
+    VkPipelineLayout pipeline_layout;
+    VkPipeline graphics_pipeline;
 } VulkanContext;
