@@ -1,3 +1,5 @@
+#define BACKEND_COMMON_IMPL
+#define BACKEND_KIND_OWNER
 #include "backend.h"
 
 #include "vulkan/backend.h"
@@ -5,6 +7,10 @@
 #include <quark/core/log.h>
 
 static RendererBackendKind backend_kind;
+
+inline __attribute((always_inline)) RendererBackendKind get_renderer_backend_kind() {
+    return backend_kind;
+}
 
 QUARK_B8 init_renderer_backend(
     const RendererBackendKind backend,
@@ -21,53 +27,8 @@ QUARK_B8 init_renderer_backend(
     };
 }
 
-QUARK_B8 shutdown_renderer_backend() {
-    switch (backend_kind) {
-        case QUARK_RENDERER_BACKEND_VK:
-            return vk_shutdown_renderer_backend();
-        default:
-            QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend_kind);
-            return QUARK_FALSE;
-    };
-}
-
-QUARK_B8 init_renderer_window(GLFWwindow* window) {
-    switch (backend_kind) {
-        case QUARK_RENDERER_BACKEND_VK:
-            return vk_init_renderer_window(window);
-        default:
-            QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend_kind);
-            return QUARK_FALSE;
-    };
-}
-
-QUARK_B8 shutdown_renderer_window() {
-    switch (backend_kind) {
-        case QUARK_RENDERER_BACKEND_VK:
-            return vk_shutdown_renderer_window();
-        default:
-            QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend_kind);
-            return QUARK_FALSE;
-    }
-}
-
-QUARK_B8 render_renderer_frame(const Camera* camera) {
-    switch (backend_kind) {
-        case QUARK_RENDERER_BACKEND_VK:
-            return vk_render_renderer_frame(camera);
-        default:
-            QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend_kind);
-            return QUARK_FALSE;
-    }
-}
-
-void on_framebuffer_resized() {
-    switch (backend_kind) {
-        case QUARK_RENDERER_BACKEND_VK:
-            return vk_on_framebuffer_resized();
-        default:
-            QUARK_LOG_ERROR("Unsupported renderer backend: %u", backend_kind);
-            return;
-    }
-}
-
+BACKEND_PREFIX_DISPATCHER(QUARK_FALSE, QUARK_B8, shutdown_renderer_backend);
+BACKEND_PREFIX_DISPATCHER(QUARK_FALSE, QUARK_B8, init_renderer_window, GLFWwindow*, window);
+BACKEND_PREFIX_DISPATCHER(QUARK_FALSE, QUARK_B8, shutdown_renderer_window);
+BACKEND_PREFIX_DISPATCHER(QUARK_FALSE, QUARK_B8, render_renderer_frame, const Camera*, camera);
+BACKEND_PREFIX_DISPATCHER(, void, on_framebuffer_resized);

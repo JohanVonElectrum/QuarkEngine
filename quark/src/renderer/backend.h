@@ -13,17 +13,12 @@ typedef struct GLFWwindow GLFWwindow;
 #ifndef QUARK_RENDERER_BACKEND_FUNCTIONS
 #define QUARK_RENDERER_BACKEND_FUNCTIONS
 
+#include "macro.h"
 #include "../core/camera.h"
 
-#include <quark/macro.h>
 #include <quark/primitives.h>
 
-#ifndef BACKEND_PREFIX
-#define BACKEND_COMMON
-#define BACKEND_PREFIX
-#endif // BACKEND_PREFIX
-
-#define BACKEND_PREFIXED(ident) QUARK_MERGE(QUARK_EXPAND_MACRO(BACKEND_PREFIX), ident)
+RendererBackendKind get_renderer_backend_kind();
 
 QUARK_B8 BACKEND_PREFIXED(init_renderer_backend)(
 #ifdef BACKEND_COMMON
