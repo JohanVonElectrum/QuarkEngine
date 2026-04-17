@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "../../platform/memory.h"
+#include "../platform/memory.h"
 
 static QueueFamilyInfo make_invalid_queue_family_info();
 static void free_swapchain_support_details(SwapchainSupportDetails* swapchain_support_details);

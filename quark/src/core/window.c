@@ -53,14 +53,12 @@ struct QuarkWindow
 };
 
 QuarkWindow* create_window(const WindowCreateInfo* create_info) {
-    if (create_info->mode == GRAPHICS_MODE_NONE) {
+    if (create_info->mode == WINDOW_MODE_HEADLESS) {
         QUARK_LOG_WARN("Attempted to create a window in headless mode");
         return nullptr;
     }
 
-    if (create_info->mode == GRAPHICS_MODE_VULKAN) {
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    }
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     GLFWwindow* window = glfwCreateWindow(
         create_info->data.graphics.width,

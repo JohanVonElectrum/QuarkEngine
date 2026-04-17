@@ -2,13 +2,17 @@
 
 #include <quark/primitives.h>
 
+typedef enum
+{
+    WINDOW_MODE_HEADLESS,
+    WINDOW_MODE_WINDOWED,
+    WINDOW_MODE_FULLSCREEN,
+    WINDOW_MODE_BORDERLESS,
+} WindowMode;
+
 typedef struct
 {
-    enum
-    {
-        GRAPHICS_MODE_NONE,
-        GRAPHICS_MODE_VULKAN,
-    } mode;
+    WindowMode mode;
     union
     {
         struct {} headless;

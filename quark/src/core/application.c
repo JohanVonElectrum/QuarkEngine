@@ -17,6 +17,21 @@ struct Application
 
 static Application s_application;
 
+static const char* window_mode_name(const WindowMode mode) {
+    switch (mode) {
+        case WINDOW_MODE_HEADLESS:
+            return "headless";
+        case WINDOW_MODE_WINDOWED:
+            return "windowed";
+        case WINDOW_MODE_FULLSCREEN:
+            return "fullscreen";
+        case WINDOW_MODE_BORDERLESS:
+            return "borderless";
+        default:
+            return "unknown";
+    }
+}
+
 Application* create_application(const ApplicationCreateInfo* create_info) {
     QUARK_ASSERT_RETURN(
         nullptr,
@@ -29,7 +44,7 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
         "Attempted to create application when one already exists"
     );
 
-    const QUARK_B8 headless = create_info->window.mode == GRAPHICS_MODE_NONE;
+    const QUARK_B8 headless = create_info->window.mode == WINDOW_MODE_HEADLESS;
     if (!headless && !init_windowing()) {
         QUARK_LOG_FATAL("Failed to initialize windowing system");
         return nullptr;
@@ -39,13 +54,13 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
     s_application.version = create_info->version;
     s_application.camera = create_info->camera;
     s_application.flags = APPLICATION_FLAG_RUNNING;
+    QUARK_LOG_INFO("Application window mode: %s", window_mode_name(create_info->window.mode));
     if (headless) {
         s_application.flags |= APPLICATION_FLAG_HEADLESS;
     }
 
     if (!headless) {
         if (!init_renderer_backend(
-            create_info->window.mode - 1,
             create_info->name,
             create_info->version.major,
             create_info->version.minor,

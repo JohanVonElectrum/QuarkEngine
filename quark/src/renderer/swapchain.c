@@ -1,7 +1,7 @@
 #include "swapchain.h"
 
 #include "device.h"
-#include "../../platform/memory.h"
+#include "../platform/memory.h"
 
 #include <quark/core/log.h>
 

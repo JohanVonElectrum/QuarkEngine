@@ -17,7 +17,7 @@ QUARK_B8 init_application(ApplicationCreateInfo* create_info)
         .far_plane = 100.0f,
     };
     create_info->window = (WindowCreateInfo){
-        .mode = GRAPHICS_MODE_VULKAN,
+        .mode = WINDOW_MODE_WINDOWED,
         .data = {
             .graphics = {
                 .title = "Testbed",

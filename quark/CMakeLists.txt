@@ -6,9 +6,8 @@ add_library(quark SHARED
     src/core/engine.c
     src/core/event.c
     src/renderer/backend.c
-    src/renderer/vulkan/backend.c
-    src/renderer/vulkan/device.c
-    src/renderer/vulkan/swapchain.c
+    src/renderer/device.c
+    src/renderer/swapchain.c
 )
 
 target_include_directories(quark PUBLIC
@@ -71,17 +70,17 @@ endif ()
 set(QUARK_SHADER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders")
 set(QUARK_SHADER_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets/shaders")
 
-set(QUARK_VERTEX_SHADER_SOURCE "${QUARK_SHADER_SOURCE_DIR}/triangle.vert")
-set(QUARK_FRAGMENT_SHADER_SOURCE "${QUARK_SHADER_SOURCE_DIR}/triangle.frag")
-set(QUARK_VERTEX_SHADER_SPV "${QUARK_SHADER_OUTPUT_DIR}/triangle.vert.spv")
-set(QUARK_FRAGMENT_SHADER_SPV "${QUARK_SHADER_OUTPUT_DIR}/triangle.frag.spv")
+set(QUARK_VERTEX_SHADER_SOURCE "${QUARK_SHADER_SOURCE_DIR}/obb.vert")
+set(QUARK_FRAGMENT_SHADER_SOURCE "${QUARK_SHADER_SOURCE_DIR}/obb.frag")
+set(QUARK_VERTEX_SHADER_SPV "${QUARK_SHADER_OUTPUT_DIR}/obb.vert.spv")
+set(QUARK_FRAGMENT_SHADER_SPV "${QUARK_SHADER_OUTPUT_DIR}/obb.frag.spv")
 
 add_custom_command(
     OUTPUT ${QUARK_VERTEX_SHADER_SPV}
     COMMAND ${CMAKE_COMMAND} -E make_directory "${QUARK_SHADER_OUTPUT_DIR}"
     COMMAND ${QUARK_GLSLC_EXECUTABLE} "${QUARK_VERTEX_SHADER_SOURCE}" -o "${QUARK_VERTEX_SHADER_SPV}"
     DEPENDS ${QUARK_VERTEX_SHADER_SOURCE}
-    COMMENT "Compiling Vulkan vertex shader: triangle.vert"
+    COMMENT "Compiling Vulkan vertex shader: obb.vert"
     VERBATIM
 )
 
@@ -90,7 +89,7 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E make_directory "${QUARK_SHADER_OUTPUT_DIR}"
     COMMAND ${QUARK_GLSLC_EXECUTABLE} "${QUARK_FRAGMENT_SHADER_SOURCE}" -o "${QUARK_FRAGMENT_SHADER_SPV}"
     DEPENDS ${QUARK_FRAGMENT_SHADER_SOURCE}
-    COMMENT "Compiling Vulkan fragment shader: triangle.frag"
+    COMMENT "Compiling Vulkan fragment shader: obb.frag"
     VERBATIM
 )
 
