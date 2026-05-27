@@ -2,6 +2,7 @@
 
 #include <quark/macro.h>
 #include <quark/core/assert.h>
+#include <cstdlib/common.h>
 
 #include <vulkan/vulkan.h>
 
@@ -17,34 +18,34 @@
 typedef struct SwapchainSupportDetails
 {
     VkSurfaceCapabilitiesKHR capabilities;
-    QUARK_U32 format_count;
+    u32_t format_count;
     VkSurfaceFormatKHR* formats;
-    QUARK_U32 present_mode_count;
+    u32_t present_mode_count;
     VkPresentModeKHR* present_modes;
 } SwapchainSupportDetails;
 
-#define QUARK_VK_INVALID_QUEUE_FAMILY_INDEX ((QUARK_U32) -1)
+#define QUARK_VK_INVALID_QUEUE_FAMILY_INDEX ((u32_t) -1)
 
 typedef struct QueueFamilyInfo
 {
-    QUARK_U32 graphics;
-    QUARK_U32 graphics_count;
-    QUARK_U32 present;
-    QUARK_U32 present_count;
-    QUARK_U32 compute;
-    QUARK_U32 compute_count;
-    QUARK_U32 transfer;
-    QUARK_U32 transfer_count;
-    QUARK_B8 dedicated_transfer;
+    u32_t graphics;
+    u32_t graphics_count;
+    u32_t present;
+    u32_t present_count;
+    u32_t compute;
+    u32_t compute_count;
+    u32_t transfer;
+    u32_t transfer_count;
+    b8_t dedicated_transfer;
 } QueueFamilyInfo;
 
 typedef struct DeviceFeatureSupport
 {
     VkPhysicalDeviceFeatures core;
-    QUARK_B8 acceleration_structure;
-    QUARK_B8 ray_query;
-    QUARK_B8 ray_tracing_pipeline;
-    QUARK_B8 hardware_ray_tracing;
+    b8_t acceleration_structure;
+    b8_t ray_query;
+    b8_t ray_tracing_pipeline;
+    b8_t hardware_ray_tracing;
 } DeviceFeatureSupport;
 
 typedef struct VulkanSwapchain
@@ -52,7 +53,7 @@ typedef struct VulkanSwapchain
     VkSwapchainKHR swapchain;
     VkFormat format;
     VkExtent2D extent;
-    QUARK_U32 image_count;
+    u32_t image_count;
     VkImage* images;
     VkImageView* image_views;
     VkImage depth_image;
@@ -65,8 +66,8 @@ typedef struct VulkanSwapchain
     VkSemaphore* image_available_semaphores;
     VkSemaphore* render_finished_semaphores;
     VkFence* in_flight_fences;
-    QUARK_U32 current_frame;
-    QUARK_B8 framebuffer_resized;
+    u32_t current_frame;
+    b8_t framebuffer_resized;
 } VulkanSwapchain;
 
 typedef struct VulkanDevice

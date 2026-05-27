@@ -1,9 +1,10 @@
 #pragma once
 
 #include <quark/core/log.h>
+#include <cstdlib/common.h>
 
-QUARK_B8 init_tracing();
-QUARK_B8 shutdown_tracing();
+b8_t init_tracing();
+b8_t shutdown_tracing();
 
 typedef struct QuarkTracingSpan QuarkTracingSpan;
 

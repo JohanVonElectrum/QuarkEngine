@@ -1,7 +1,7 @@
 #pragma once
 
 #include <quark/api.h>
-#include <quark/primitives.h>
+#include <cstdlib/common.h>
 
 typedef enum
 {
@@ -14,15 +14,22 @@ typedef enum
     LOG_LEVEL_TRACE,
 } LogLevel;
 
-QUARK_API void quark_log(QUARK_B8 is_engine, LogLevel level, const char* format, ...);
+/**
+ * Low-level logging entry point. Prefer the QUARK_LOG_* macros in practice.
+ *
+ * @param is_engine  true if this is an internal engine log, false for application logs.
+ * @param level      Severity level.
+ * @param format     printf-style format string.
+ */
+QUARK_API void quark_log(b8_t is_engine, LogLevel level, const char* format, ...);
 
 // Set to `LOG_LEVEL_NONE` to disable console logging.
 #define MIN_LOG_LEVEL LOG_LEVEL_TRACE
 
 #ifdef QUARK_ENGINE
-#define QUARK_LOG_INTERNAL_ENGINE QUARK_TRUE
+#define QUARK_LOG_INTERNAL_ENGINE true
 #else
-#define QUARK_LOG_INTERNAL_ENGINE QUARK_FALSE
+#define QUARK_LOG_INTERNAL_ENGINE false
 #endif // QUARK_ENGINE
 
 #if LOG_LEVEL_FATAL <= MIN_LOG_LEVEL

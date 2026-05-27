@@ -1,6 +1,6 @@
 #pragma once
 
-#include <quark/primitives.h>
+#include <cstdlib/common.h>
 
 typedef enum
 {
@@ -19,8 +19,8 @@ typedef struct
         struct
         {
             const char* title;
-            QUARK_U16 width;
-            QUARK_U16 height;
+            u16_t width;
+            u16_t height;
         } graphics;
     } data;
 } WindowCreateInfo;

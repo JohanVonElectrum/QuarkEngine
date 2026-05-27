@@ -1,5 +1,6 @@
 #pragma once
 
 #include <quark/core/camera.h>
+#include <cstdlib/common.h>
 
-QUARK_B8 camera_get_view_projection_matrix(const Camera* camera, QUARK_F32 aspect_ratio, mat4 out_matrix);
+b8_t camera_get_view_projection_matrix(const Camera* camera, f32_t aspect_ratio, mat4 out_matrix);

@@ -16,10 +16,10 @@
 // Set to `LOG_LEVEL_NONE` to disable console logging.
 #define CONSOLE_LOG_LEVEL MIN_LOG_LEVEL
 
-static thread_local QUARK_USIZE tracing_span_id_counter = 0;
+static thread_local usize_t tracing_span_id_counter = 0;
 static EventQueue* queue = nullptr;
 static thread_t* thread = nullptr;
-static QUARK_B8 initialized = QUARK_FALSE;
+static b8_t initialized = false;
 
 typedef enum MSG_TYPE
 {
@@ -31,17 +31,17 @@ typedef enum MSG_TYPE
 
 struct QuarkTracingSpan
 {
-    QUARK_USIZE id;
-    QUARK_USIZE parent;
-    QUARK_USIZE tid;
-    QUARK_USIZE time;
+    usize_t id;
+    usize_t parent;
+    usize_t tid;
+    usize_t time;
 };
 
 void* worker(void* arg);
 void emit_msg(MSG_TYPE type, QuarkEventData arg1, QuarkEventData arg2);
 EventQueueResult poll_msg(MSG_TYPE* out_type, QuarkEventData* out_arg1, QuarkEventData* out_arg2);
-void process_log(QUARK_B8 is_engine, LogLevel level, const char* msg);
-void process_trace(const QuarkTracingSpan* span, QUARK_USIZE monotonic_ticks);
+void process_log(b8_t is_engine, LogLevel level, const char* msg);
+void process_trace(const QuarkTracingSpan* span, usize_t monotonic_ticks);
 
 static const char* const LOG_LEVEL_NAMES[7] = {
     [LOG_LEVEL_NONE] = "NONE",
@@ -53,31 +53,31 @@ static const char* const LOG_LEVEL_NAMES[7] = {
     [LOG_LEVEL_TRACE] = "TRACE",
 };
 
-QUARK_B8 init_tracing() {
+b8_t init_tracing() {
     queue = create_event_queue(256);
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         !initialized,
         "Tracing already initialized"
     );
     thread = spawn_thread(worker, nullptr, &HEAP_ALLOCATOR);
     QUARK_ASSERT_X(
         QUARK_ASSERT_RETURN(
-            QUARK_FALSE,
+            false,
             destroy_event_queue(queue),
             "Failed to destroy tracing event queue"
         ),
         thread != nullptr,
         "Failed to spawn tracing thread"
     );
-    initialized = QUARK_TRUE;
-    return QUARK_TRUE;
+    initialized = true;
+    return true;
 }
 
 // NOT THREAD SAFE! Call after every thread is closed before engine shutdown.
-QUARK_B8 shutdown_tracing() {
+b8_t shutdown_tracing() {
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         initialized,
         "Tracing not initialized"
     );
@@ -88,17 +88,17 @@ QUARK_B8 shutdown_tracing() {
     thread = nullptr;
 
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         destroy_event_queue(queue),
         "Failed to destroy tracing event queue"
     );
     queue = nullptr;
 
-    initialized = QUARK_FALSE;
-    return QUARK_TRUE;
+    initialized = false;
+    return true;
 }
 
-void quark_log(const QUARK_B8 is_engine, const LogLevel level, const char* format, ...) {
+void quark_log(const b8_t is_engine, const LogLevel level, const char* format, ...) {
     if (!initialized) {
         fprintf(
             stderr,
@@ -112,7 +112,7 @@ void quark_log(const QUARK_B8 is_engine, const LogLevel level, const char* forma
 
     __builtin_va_list args;
     va_start(args, format);
-    const QUARK_USIZE len = vsnprintf(nullptr, 0, format, args);
+    const usize_t len = vsnprintf(nullptr, 0, format, args);
     char* buffer = mem_heap_alloc(len + 1);
     vsnprintf(buffer, len + 1, format, args);
     va_end(args);
@@ -158,24 +158,24 @@ void* worker(void* arg) {
     while (poll_msg(&type, &arg1, &arg2) != EVENT_QUEUE_FAILURE) {
         switch (type) {
             case MSG_TYPE_ENGINE_LOG:
-                process_log(QUARK_TRUE, (LogLevel) (QUARK_USIZE) arg1, (const char*) arg2);
+                process_log(true, (LogLevel) (usize_t) arg1, (const char*) arg2);
                 break;
             case MSG_TYPE_APP_LOG:
-                process_log(QUARK_FALSE, (LogLevel) (QUARK_USIZE) arg1, (const char*) arg2);
+                process_log(false, (LogLevel) (usize_t) arg1, (const char*) arg2);
                 break;
             case MSG_TYPE_TRACE:
-                process_trace((QuarkTracingSpan*) arg1, (QUARK_USIZE) arg2);
+                process_trace((QuarkTracingSpan*) arg1, (usize_t) arg2);
                 break;
             case MSG_TYPE_CLOSE:
                 return nullptr;
             default:
-                process_log(QUARK_TRUE, LOG_LEVEL_ERROR, "Received event with unknown type");
+                process_log(true, LOG_LEVEL_ERROR, "Received event with unknown type");
                 QUARK_DEBUGBREAK();
                 break;
         }
     }
 
-    process_log(QUARK_TRUE, LOG_LEVEL_ERROR, "Failed to poll tracing event");
+    process_log(true, LOG_LEVEL_ERROR, "Failed to poll tracing event");
     QUARK_DEBUGBREAK();
     return nullptr;
 }
@@ -199,7 +199,7 @@ EventQueueResult poll_msg(MSG_TYPE* out_type, QuarkEventData* out_arg1, QuarkEve
     return result;
 }
 
-void process_log(const QUARK_B8 is_engine, const LogLevel level, const char* msg) {
+void process_log(const b8_t is_engine, const LogLevel level, const char* msg) {
     if (level <= CONSOLE_LOG_LEVEL) {
         printf("[%s | %s] %s\n", is_engine ? "Quark" : "App", LOG_LEVEL_NAMES[level], msg);
     }
@@ -209,7 +209,7 @@ void process_log(const QUARK_B8 is_engine, const LogLevel level, const char* msg
     mem_heap_free((void*) msg);
 }
 
-void process_trace(const QuarkTracingSpan* span, QUARK_USIZE monotonic_ticks) {
+void process_trace(const QuarkTracingSpan* span, usize_t monotonic_ticks) {
     // TODO: print binary event to file
 
     mem_heap_free((void*) span);

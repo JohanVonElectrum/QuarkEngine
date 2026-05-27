@@ -11,7 +11,7 @@ struct Application
     const char* name;
     Version version;
     Camera camera;
-    QUARK_U8 flags;
+    u8_t flags;
     QuarkWindow* window;
 };
 
@@ -44,7 +44,7 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
         "Attempted to create application when one already exists"
     );
 
-    const QUARK_B8 headless = create_info->window.mode == WINDOW_MODE_HEADLESS;
+    const b8_t headless = create_info->window.mode == WINDOW_MODE_HEADLESS;
     if (!headless && !init_windowing()) {
         QUARK_LOG_FATAL("Failed to initialize windowing system");
         return nullptr;
@@ -87,14 +87,14 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
     return &s_application;
 }
 
-QUARK_B8 run_application(Application* application) {
+b8_t run_application(Application* application) {
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         application,
         "Attempted to run NULL application"
     );
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         application->flags & APPLICATION_FLAG_INIT,
         "Attempted to run application that was not initialized"
     );
@@ -108,7 +108,7 @@ QUARK_B8 run_application(Application* application) {
         if (!(application->flags & APPLICATION_FLAG_HEADLESS)) {
             if (!windowing_poll_events()) {
                 QUARK_LOG_ERROR("Failed to poll windowing events");
-                return QUARK_FALSE;
+                return false;
             }
 
             if (window_should_close(application->window)) {
@@ -118,44 +118,44 @@ QUARK_B8 run_application(Application* application) {
 
             if (!render_renderer_frame(&application->camera)) {
                 QUARK_LOG_ERROR("Failed to render frame");
-                return QUARK_FALSE;
+                return false;
             }
         }
     }
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 destroy_application(Application* application) {
+b8_t destroy_application(Application* application) {
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         application,
         "Attempted to destroy NULL application"
     );
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         application->flags & APPLICATION_FLAG_INIT,
         "Attempted to destroy application that was not initialized"
     );
 
-    QUARK_B8 result = QUARK_TRUE;
+    b8_t result = true;
 
     if (!(application->flags & APPLICATION_FLAG_HEADLESS)) {
          if (application->window) {
             if (!destroy_window(application->window)) {
                 QUARK_LOG_ERROR("Failed to destroy window");
-                result = QUARK_FALSE;
+                result = false;
             }
         }
 
         if (!shutdown_windowing()) {
             QUARK_LOG_ERROR("Failed to shutdown windowing system");
-            result = QUARK_FALSE;
+            result = false;
         }
 
         if (!shutdown_renderer_backend()) {
             QUARK_LOG_ERROR("Failed to shutdown renderer backend");
-            result = QUARK_FALSE;
+            result = false;
         }
     }
 

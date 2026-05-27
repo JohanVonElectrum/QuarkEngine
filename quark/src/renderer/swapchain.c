@@ -10,30 +10,30 @@ static VkSurfaceFormatKHR choose_swapchain_surface_format(const SwapchainSupport
 static VkPresentModeKHR choose_swapchain_present_mode(const SwapchainSupportDetails* support);
 static VkExtent2D choose_swapchain_extent(
     const SwapchainSupportDetails* support,
-    QUARK_U32 framebuffer_width,
-    QUARK_U32 framebuffer_height
+    u32_t framebuffer_width,
+    u32_t framebuffer_height
 );
-static QUARK_U32 choose_swapchain_image_count(const SwapchainSupportDetails* support);
+static u32_t choose_swapchain_image_count(const SwapchainSupportDetails* support);
 static VkFormat choose_depth_format(VulkanContext* context);
-static QUARK_U32 find_memory_type(
+static u32_t find_memory_type(
     VulkanContext* context,
-    QUARK_U32 type_filter,
+    u32_t type_filter,
     VkMemoryPropertyFlags required_properties
 );
-static QUARK_B8 has_stencil_component(VkFormat format);
-static QUARK_B8 create_depth_resources(VulkanContext* context, VulkanSwapchain* swapchain, VkFormat depth_format);
-static QUARK_B8 create_swapchain_render_pass(VulkanContext* context, VulkanSwapchain* swapchain, VkFormat depth_format);
-static QUARK_B8 create_swapchain_framebuffers(VulkanContext* context, VulkanSwapchain* swapchain);
-static QUARK_B8 create_swapchain_sync_objects(VulkanContext* context, VulkanSwapchain* swapchain);
+static b8_t has_stencil_component(VkFormat format);
+static b8_t create_depth_resources(VulkanContext* context, VulkanSwapchain* swapchain, VkFormat depth_format);
+static b8_t create_swapchain_render_pass(VulkanContext* context, VulkanSwapchain* swapchain, VkFormat depth_format);
+static b8_t create_swapchain_framebuffers(VulkanContext* context, VulkanSwapchain* swapchain);
+static b8_t create_swapchain_sync_objects(VulkanContext* context, VulkanSwapchain* swapchain);
 static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwapchain* swapchain);
 
-QUARK_B8 create_vulkan_swapchain(
+b8_t create_vulkan_swapchain(
     VulkanContext* context,
-    const QUARK_U32 framebuffer_width,
-    const QUARK_U32 framebuffer_height
+    const u32_t framebuffer_width,
+    const u32_t framebuffer_height
 ) {
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         context->device.logical_device != VK_NULL_HANDLE,
         "Cannot create a Vulkan swapchain without a logical device"
     );
@@ -45,11 +45,11 @@ QUARK_B8 create_vulkan_swapchain(
             context->surface,
             &support->capabilities
         ),
-        QUARK_FALSE
+        false
     );
 
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         support->format_count != 0 && support->present_mode_count != 0,
         "Swapchain support details are incomplete"
     );
@@ -58,13 +58,13 @@ QUARK_B8 create_vulkan_swapchain(
     const VkSurfaceFormatKHR surface_format = choose_swapchain_surface_format(support);
     const VkPresentModeKHR present_mode = choose_swapchain_present_mode(support);
     const VkExtent2D extent = choose_swapchain_extent(support, framebuffer_width, framebuffer_height);
-    const QUARK_U32 image_count = choose_swapchain_image_count(support);
+    const u32_t image_count = choose_swapchain_image_count(support);
 
-    const QUARK_U32 queue_family_indices[] = {
+    const u32_t queue_family_indices[] = {
         context->device.queue_families.graphics,
         context->device.queue_families.present,
     };
-    const QUARK_B8 use_concurrent_sharing =
+    const b8_t use_concurrent_sharing =
         context->device.queue_families.graphics != context->device.queue_families.present;
 
     VkSwapchainCreateInfoKHR swapchain_create_info = {
@@ -79,7 +79,7 @@ QUARK_B8 create_vulkan_swapchain(
         .imageArrayLayers = 1,
         .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .imageSharingMode = use_concurrent_sharing ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
-        .queueFamilyIndexCount = use_concurrent_sharing ? (QUARK_U32) (sizeof(queue_family_indices) / sizeof(queue_family_indices[0])) : 0,
+        .queueFamilyIndexCount = use_concurrent_sharing ? (u32_t) (sizeof(queue_family_indices) / sizeof(queue_family_indices[0])) : 0,
         .pQueueFamilyIndices = use_concurrent_sharing ? queue_family_indices : nullptr,
         .preTransform = support->capabilities.currentTransform,
         .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
@@ -90,7 +90,7 @@ QUARK_B8 create_vulkan_swapchain(
 
     VK_CHECK_RETURN(
         vkCreateSwapchainKHR(context->device.logical_device, &swapchain_create_info, context->allocator, &swapchain.swapchain),
-        QUARK_FALSE
+        false
     );
 
     swapchain.format = surface_format.format;
@@ -100,7 +100,7 @@ QUARK_B8 create_vulkan_swapchain(
         vkGetSwapchainImagesKHR(context->device.logical_device, swapchain.swapchain, &swapchain.image_count, nullptr),
         {
             destroy_vulkan_swapchain_resources(context, &swapchain);
-            return QUARK_FALSE;
+            return false;
         }
     );
 
@@ -108,14 +108,14 @@ QUARK_B8 create_vulkan_swapchain(
     if (swapchain.images == nullptr) {
         QUARK_LOG_ERROR("Failed to allocate memory for swapchain images");
         destroy_vulkan_swapchain_resources(context, &swapchain);
-        return QUARK_FALSE;
+        return false;
     }
 
     VK_CHECK_X(
         vkGetSwapchainImagesKHR(context->device.logical_device, swapchain.swapchain, &swapchain.image_count, swapchain.images),
         {
             destroy_vulkan_swapchain_resources(context, &swapchain);
-            return QUARK_FALSE;
+            return false;
         }
     );
 
@@ -123,10 +123,10 @@ QUARK_B8 create_vulkan_swapchain(
     if (swapchain.image_views == nullptr) {
         QUARK_LOG_ERROR("Failed to allocate memory for swapchain image views");
         destroy_vulkan_swapchain_resources(context, &swapchain);
-        return QUARK_FALSE;
+        return false;
     }
 
-    for (QUARK_U32 i = 0; i < swapchain.image_count; ++i) {
+    for (u32_t i = 0; i < swapchain.image_count; ++i) {
         const VkImageViewCreateInfo image_view_create_info = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .pNext = nullptr,
@@ -153,7 +153,7 @@ QUARK_B8 create_vulkan_swapchain(
             vkCreateImageView(context->device.logical_device, &image_view_create_info, context->allocator, &swapchain.image_views[i]),
             {
                 destroy_vulkan_swapchain_resources(context, &swapchain);
-                return QUARK_FALSE;
+                return false;
             }
         );
     }
@@ -162,22 +162,22 @@ QUARK_B8 create_vulkan_swapchain(
     if (depth_format == VK_FORMAT_UNDEFINED) {
         QUARK_LOG_ERROR("Failed to find a supported depth format");
         destroy_vulkan_swapchain_resources(context, &swapchain);
-        return QUARK_FALSE;
+        return false;
     }
 
     if (!create_depth_resources(context, &swapchain, depth_format)) {
         destroy_vulkan_swapchain_resources(context, &swapchain);
-        return QUARK_FALSE;
+        return false;
     }
 
     if (!create_swapchain_render_pass(context, &swapchain, depth_format)) {
         destroy_vulkan_swapchain_resources(context, &swapchain);
-        return QUARK_FALSE;
+        return false;
     }
 
     if (!create_swapchain_framebuffers(context, &swapchain)) {
         destroy_vulkan_swapchain_resources(context, &swapchain);
-        return QUARK_FALSE;
+        return false;
     }
 
     const VkCommandPoolCreateInfo command_pool_create_info = {
@@ -190,7 +190,7 @@ QUARK_B8 create_vulkan_swapchain(
         vkCreateCommandPool(context->device.logical_device, &command_pool_create_info, context->allocator, &swapchain.command_pool),
         {
             destroy_vulkan_swapchain_resources(context, &swapchain);
-            return QUARK_FALSE;
+            return false;
         }
     );
 
@@ -198,7 +198,7 @@ QUARK_B8 create_vulkan_swapchain(
     if (swapchain.command_buffers == nullptr) {
         QUARK_LOG_ERROR("Failed to allocate memory for swapchain command buffers");
         destroy_vulkan_swapchain_resources(context, &swapchain);
-        return QUARK_FALSE;
+        return false;
     }
 
     const VkCommandBufferAllocateInfo command_buffer_allocate_info = {
@@ -212,13 +212,13 @@ QUARK_B8 create_vulkan_swapchain(
         vkAllocateCommandBuffers(context->device.logical_device, &command_buffer_allocate_info, swapchain.command_buffers),
         {
             destroy_vulkan_swapchain_resources(context, &swapchain);
-            return QUARK_FALSE;
+            return false;
         }
     );
 
     if (!create_swapchain_sync_objects(context, &swapchain)) {
         destroy_vulkan_swapchain_resources(context, &swapchain);
-        return QUARK_FALSE;
+        return false;
     }
 
     swapchain.current_frame = 0;
@@ -233,17 +233,17 @@ QUARK_B8 create_vulkan_swapchain(
         MAX_FRAMES_IN_FLIGHT
     );
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 destroy_vulkan_swapchain(VulkanContext* context) {
+b8_t destroy_vulkan_swapchain(VulkanContext* context) {
     destroy_vulkan_swapchain_resources(context, &context->swapchain);
     context->swapchain = (VulkanSwapchain) {0};
-    return QUARK_TRUE;
+    return true;
 }
 
 static VkSurfaceFormatKHR choose_swapchain_surface_format(const SwapchainSupportDetails* support) {
-    for (QUARK_U32 i = 0; i < support->format_count; ++i) {
+    for (u32_t i = 0; i < support->format_count; ++i) {
         if (
             support->formats[i].format == VK_FORMAT_B8G8R8A8_SRGB &&
             support->formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
@@ -256,7 +256,7 @@ static VkSurfaceFormatKHR choose_swapchain_surface_format(const SwapchainSupport
 }
 
 static VkPresentModeKHR choose_swapchain_present_mode(const SwapchainSupportDetails* support) {
-    for (QUARK_U32 i = 0; i < support->present_mode_count; ++i) {
+    for (u32_t i = 0; i < support->present_mode_count; ++i) {
         if (support->present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
             return VK_PRESENT_MODE_MAILBOX_KHR;
         }
@@ -267,8 +267,8 @@ static VkPresentModeKHR choose_swapchain_present_mode(const SwapchainSupportDeta
 
 static VkExtent2D choose_swapchain_extent(
     const SwapchainSupportDetails* support,
-    const QUARK_U32 framebuffer_width,
-    const QUARK_U32 framebuffer_height
+    const u32_t framebuffer_width,
+    const u32_t framebuffer_height
 ) {
     if (support->capabilities.currentExtent.width != UINT32_MAX) {
         return support->capabilities.currentExtent;
@@ -295,8 +295,8 @@ static VkExtent2D choose_swapchain_extent(
     return extent;
 }
 
-static QUARK_U32 choose_swapchain_image_count(const SwapchainSupportDetails* support) {
-    QUARK_U32 image_count = support->capabilities.minImageCount + 1;
+static u32_t choose_swapchain_image_count(const SwapchainSupportDetails* support) {
+    u32_t image_count = support->capabilities.minImageCount + 1;
     if (image_count < 3 && (support->capabilities.maxImageCount == 0 || support->capabilities.maxImageCount >= 3)) {
         image_count = 3;
     }
@@ -313,7 +313,7 @@ static VkFormat choose_depth_format(VulkanContext* context) {
         VK_FORMAT_D24_UNORM_S8_UINT,
     };
 
-    for (QUARK_U32 i = 0; i < (QUARK_U32) (sizeof(candidates) / sizeof(candidates[0])); ++i) {
+    for (u32_t i = 0; i < (u32_t) (sizeof(candidates) / sizeof(candidates[0])); ++i) {
         VkFormatProperties properties;
         vkGetPhysicalDeviceFormatProperties(context->device.physical_device, candidates[i], &properties);
         if (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
@@ -324,15 +324,15 @@ static VkFormat choose_depth_format(VulkanContext* context) {
     return VK_FORMAT_UNDEFINED;
 }
 
-static QUARK_U32 find_memory_type(
+static u32_t find_memory_type(
     VulkanContext* context,
-    const QUARK_U32 type_filter,
+    const u32_t type_filter,
     const VkMemoryPropertyFlags required_properties
 ) {
     VkPhysicalDeviceMemoryProperties memory_properties;
     vkGetPhysicalDeviceMemoryProperties(context->device.physical_device, &memory_properties);
 
-    for (QUARK_U32 i = 0; i < memory_properties.memoryTypeCount; ++i) {
+    for (u32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
         if ((type_filter & (1u << i)) != 0 &&
             (memory_properties.memoryTypes[i].propertyFlags & required_properties) == required_properties) {
             return i;
@@ -342,11 +342,11 @@ static QUARK_U32 find_memory_type(
     return QUARK_VK_INVALID_QUEUE_FAMILY_INDEX;
 }
 
-static QUARK_B8 has_stencil_component(const VkFormat format) {
+static b8_t has_stencil_component(const VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-static QUARK_B8 create_depth_resources(VulkanContext* context, VulkanSwapchain* swapchain, const VkFormat depth_format) {
+static b8_t create_depth_resources(VulkanContext* context, VulkanSwapchain* swapchain, const VkFormat depth_format) {
     const VkImageCreateInfo image_create_info = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext = nullptr,
@@ -371,20 +371,20 @@ static QUARK_B8 create_depth_resources(VulkanContext* context, VulkanSwapchain* 
 
     VK_CHECK_RETURN(
         vkCreateImage(context->device.logical_device, &image_create_info, context->allocator, &swapchain->depth_image),
-        QUARK_FALSE
+        false
     );
 
     VkMemoryRequirements memory_requirements;
     vkGetImageMemoryRequirements(context->device.logical_device, swapchain->depth_image, &memory_requirements);
 
-    const QUARK_U32 memory_type_index = find_memory_type(
+    const u32_t memory_type_index = find_memory_type(
         context,
         memory_requirements.memoryTypeBits,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
     if (memory_type_index == QUARK_VK_INVALID_QUEUE_FAMILY_INDEX) {
         QUARK_LOG_ERROR("Failed to find a suitable memory type for the depth image");
-        return QUARK_FALSE;
+        return false;
     }
 
     const VkMemoryAllocateInfo allocate_info = {
@@ -395,13 +395,13 @@ static QUARK_B8 create_depth_resources(VulkanContext* context, VulkanSwapchain* 
     };
     VK_CHECK_RETURN(
         vkAllocateMemory(context->device.logical_device, &allocate_info, context->allocator, &swapchain->depth_image_memory),
-        QUARK_FALSE
+        false
     );
 
     VK_CHECK_X(
         vkBindImageMemory(context->device.logical_device, swapchain->depth_image, swapchain->depth_image_memory, 0),
         {
-            return QUARK_FALSE;
+            return false;
         }
     );
 
@@ -428,13 +428,13 @@ static QUARK_B8 create_depth_resources(VulkanContext* context, VulkanSwapchain* 
     };
     VK_CHECK_RETURN(
         vkCreateImageView(context->device.logical_device, &image_view_create_info, context->allocator, &swapchain->depth_image_view),
-        QUARK_FALSE
+        false
     );
 
-    return QUARK_TRUE;
+    return true;
 }
 
-static QUARK_B8 create_swapchain_render_pass(VulkanContext* context, VulkanSwapchain* swapchain, const VkFormat depth_format) {
+static b8_t create_swapchain_render_pass(VulkanContext* context, VulkanSwapchain* swapchain, const VkFormat depth_format) {
     const VkAttachmentDescription attachments[] = {
         {
             .flags = 0,
@@ -495,29 +495,29 @@ static QUARK_B8 create_swapchain_render_pass(VulkanContext* context, VulkanSwapc
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .attachmentCount = (QUARK_U32) (sizeof(attachments) / sizeof(attachments[0])),
+        .attachmentCount = (u32_t) (sizeof(attachments) / sizeof(attachments[0])),
         .pAttachments = attachments,
         .subpassCount = 1,
         .pSubpasses = &subpass_description,
-        .dependencyCount = (QUARK_U32) (sizeof(dependencies) / sizeof(dependencies[0])),
+        .dependencyCount = (u32_t) (sizeof(dependencies) / sizeof(dependencies[0])),
         .pDependencies = dependencies,
     };
 
     VK_CHECK_RETURN(
         vkCreateRenderPass(context->device.logical_device, &render_pass_create_info, context->allocator, &swapchain->render_pass),
-        QUARK_FALSE
+        false
     );
 
-    return QUARK_TRUE;
+    return true;
 }
 
-static QUARK_B8 create_swapchain_framebuffers(VulkanContext* context, VulkanSwapchain* swapchain) {
+static b8_t create_swapchain_framebuffers(VulkanContext* context, VulkanSwapchain* swapchain) {
     swapchain->framebuffers = mem_heap_calloc(swapchain->image_count, sizeof(VkFramebuffer));
     if (swapchain->framebuffers == nullptr) {
         QUARK_LOG_ERROR("Failed to allocate memory for swapchain framebuffers");
-        return QUARK_FALSE;
+        return false;
     }
-    for (QUARK_U32 i = 0; i < swapchain->image_count; ++i) {
+    for (u32_t i = 0; i < swapchain->image_count; ++i) {
         const VkImageView attachments[] = {
             swapchain->image_views[i],
             swapchain->depth_image_view,
@@ -527,7 +527,7 @@ static QUARK_B8 create_swapchain_framebuffers(VulkanContext* context, VulkanSwap
             .pNext = nullptr,
             .flags = 0,
             .renderPass = swapchain->render_pass,
-            .attachmentCount = (QUARK_U32) (sizeof(attachments) / sizeof(attachments[0])),
+            .attachmentCount = (u32_t) (sizeof(attachments) / sizeof(attachments[0])),
             .pAttachments = attachments,
             .width = swapchain->extent.width,
             .height = swapchain->extent.height,
@@ -537,15 +537,15 @@ static QUARK_B8 create_swapchain_framebuffers(VulkanContext* context, VulkanSwap
         VK_CHECK_X(
             vkCreateFramebuffer(context->device.logical_device, &framebuffer_create_info, context->allocator, &swapchain->framebuffers[i]),
             {
-                return QUARK_FALSE;
+                return false;
             }
         );
     }
 
-    return QUARK_TRUE;
+    return true;
 }
 
-static QUARK_B8 create_swapchain_sync_objects(VulkanContext* context, VulkanSwapchain* swapchain) {
+static b8_t create_swapchain_sync_objects(VulkanContext* context, VulkanSwapchain* swapchain) {
     swapchain->image_available_semaphores = mem_heap_calloc(MAX_FRAMES_IN_FLIGHT, sizeof(VkSemaphore));
     swapchain->render_finished_semaphores = mem_heap_calloc(swapchain->image_count, sizeof(VkSemaphore));
     swapchain->in_flight_fences = mem_heap_calloc(MAX_FRAMES_IN_FLIGHT, sizeof(VkFence));
@@ -556,7 +556,7 @@ static QUARK_B8 create_swapchain_sync_objects(VulkanContext* context, VulkanSwap
         swapchain->in_flight_fences == nullptr
     ) {
         QUARK_LOG_ERROR("Failed to allocate memory for swapchain synchronization objects");
-        return QUARK_FALSE;
+        return false;
     }
 
     const VkSemaphoreCreateInfo semaphore_create_info = {
@@ -570,31 +570,31 @@ static QUARK_B8 create_swapchain_sync_objects(VulkanContext* context, VulkanSwap
         .flags = VK_FENCE_CREATE_SIGNALED_BIT,
     };
 
-    for (QUARK_U32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+    for (u32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         VK_CHECK_X(
             vkCreateSemaphore(context->device.logical_device, &semaphore_create_info, context->allocator, &swapchain->image_available_semaphores[i]),
             {
-                return QUARK_FALSE;
+                return false;
             }
         );
         VK_CHECK_X(
             vkCreateFence(context->device.logical_device, &fence_create_info, context->allocator, &swapchain->in_flight_fences[i]),
             {
-                return QUARK_FALSE;
+                return false;
             }
         );
     }
 
-    for (QUARK_U32 i = 0; i < swapchain->image_count; ++i) {
+    for (u32_t i = 0; i < swapchain->image_count; ++i) {
         VK_CHECK_X(
             vkCreateSemaphore(context->device.logical_device, &semaphore_create_info, context->allocator, &swapchain->render_finished_semaphores[i]),
             {
-                return QUARK_FALSE;
+                return false;
             }
         );
     }
 
-    return QUARK_TRUE;
+    return true;
 }
 
 static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwapchain* swapchain) {
@@ -612,13 +612,13 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
 
     if (swapchain->in_flight_fences != nullptr) {
         if (device != VK_NULL_HANDLE) {
-            for (QUARK_U32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            for (u32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
                 if (swapchain->in_flight_fences[i] != VK_NULL_HANDLE) {
                     vkDestroyFence(device, swapchain->in_flight_fences[i], context->allocator);
                 }
             }
         }
-        if (mem_heap_free(swapchain->in_flight_fences) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->in_flight_fences) == false) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain fences");
         }
         swapchain->in_flight_fences = nullptr;
@@ -626,13 +626,13 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
 
     if (swapchain->render_finished_semaphores != nullptr) {
         if (device != VK_NULL_HANDLE) {
-            for (QUARK_U32 i = 0; i < swapchain->image_count; ++i) {
+            for (u32_t i = 0; i < swapchain->image_count; ++i) {
                 if (swapchain->render_finished_semaphores[i] != VK_NULL_HANDLE) {
                     vkDestroySemaphore(device, swapchain->render_finished_semaphores[i], context->allocator);
                 }
             }
         }
-        if (mem_heap_free(swapchain->render_finished_semaphores) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->render_finished_semaphores) == false) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain render-finished semaphores");
         }
         swapchain->render_finished_semaphores = nullptr;
@@ -640,20 +640,20 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
 
     if (swapchain->image_available_semaphores != nullptr) {
         if (device != VK_NULL_HANDLE) {
-            for (QUARK_U32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            for (u32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
                 if (swapchain->image_available_semaphores[i] != VK_NULL_HANDLE) {
                     vkDestroySemaphore(device, swapchain->image_available_semaphores[i], context->allocator);
                 }
             }
         }
-        if (mem_heap_free(swapchain->image_available_semaphores) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->image_available_semaphores) == false) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain image-available semaphores");
         }
         swapchain->image_available_semaphores = nullptr;
     }
 
     if (swapchain->command_buffers != nullptr) {
-        if (mem_heap_free(swapchain->command_buffers) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->command_buffers) == false) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain command buffers");
         }
         swapchain->command_buffers = nullptr;
@@ -666,13 +666,13 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
 
     if (swapchain->framebuffers != nullptr) {
         if (device != VK_NULL_HANDLE) {
-            for (QUARK_U32 i = 0; i < swapchain->image_count; ++i) {
+            for (u32_t i = 0; i < swapchain->image_count; ++i) {
                 if (swapchain->framebuffers[i] != VK_NULL_HANDLE) {
                     vkDestroyFramebuffer(device, swapchain->framebuffers[i], context->allocator);
                 }
             }
         }
-        if (mem_heap_free(swapchain->framebuffers) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->framebuffers) == false) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain framebuffers");
         }
         swapchain->framebuffers = nullptr;
@@ -700,20 +700,20 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
 
     if (swapchain->image_views != nullptr) {
         if (device != VK_NULL_HANDLE) {
-            for (QUARK_U32 i = 0; i < swapchain->image_count; ++i) {
+            for (u32_t i = 0; i < swapchain->image_count; ++i) {
                 if (swapchain->image_views[i] != VK_NULL_HANDLE) {
                     vkDestroyImageView(device, swapchain->image_views[i], context->allocator);
                 }
             }
         }
-        if (mem_heap_free(swapchain->image_views) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->image_views) == false) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain image views");
         }
         swapchain->image_views = nullptr;
     }
 
     if (swapchain->images != nullptr) {
-        if (mem_heap_free(swapchain->images) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->images) == false) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain images");
         }
         swapchain->images = nullptr;

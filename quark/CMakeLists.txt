@@ -40,7 +40,7 @@ else()
     )
     FetchContent_MakeAvailable(cstdlib)
 endif()
-target_link_libraries(quark PRIVATE cstdlib::shared)
+target_link_libraries(quark PUBLIC cstdlib::shared)
 
 FetchContent_Declare(
     glfw

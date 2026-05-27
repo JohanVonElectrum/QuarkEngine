@@ -1,15 +1,24 @@
 #pragma once
 
 #include "../core/camera.h"
-
-#include <quark/primitives.h>
+#include <cstdlib/common.h>
 
 typedef struct GLFWwindow GLFWwindow;
 
-QUARK_B8 init_renderer_backend(const char* app_name, QUARK_U16 app_major, QUARK_U16 app_minor, QUARK_U16 app_patch);
-QUARK_B8 shutdown_renderer_backend();
+/**
+ * Initialize the Vulkan renderer backend (instance, debug layers, etc.).
+ */
+b8_t init_renderer_backend(const char* app_name, u16_t app_major, u16_t app_minor, u16_t app_patch);
 
-QUARK_B8 init_renderer_window(GLFWwindow* window);
-QUARK_B8 shutdown_renderer_window();
-QUARK_B8 render_renderer_frame(const Camera* camera);
+b8_t shutdown_renderer_backend();
+
+/**
+ * Initialize renderer resources tied to a window (surface, device, swapchain, etc.).
+ */
+b8_t init_renderer_window(GLFWwindow* window);
+
+b8_t shutdown_renderer_window();
+
+b8_t render_renderer_frame(const Camera* camera);
+
 void on_framebuffer_resized();

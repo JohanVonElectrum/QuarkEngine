@@ -29,14 +29,14 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
 );
 #endif // QUARK_DEBUG
 
-static QUARK_B8 vk_recreate_swapchain();
-static QUARK_B8 read_binary_file(const char* path, QUARK_U8** out_data, QUARK_USIZE* out_size);
-static QUARK_B8 create_shader_module_from_file(const char* path, VkShaderModule* out_module);
-static QUARK_B8 create_vulkan_graphics_pipeline();
+static b8_t vk_recreate_swapchain();
+static b8_t read_binary_file(const char* path, u8_t** out_data, usize_t* out_size);
+static b8_t create_shader_module_from_file(const char* path, VkShaderModule* out_module);
+static b8_t create_vulkan_graphics_pipeline();
 static void destroy_vulkan_graphics_pipeline();
 
-QUARK_B8 init_renderer_backend(
-    const char* app_name, const QUARK_U16 app_major, const QUARK_U16 app_minor, const QUARK_U16 app_patch
+b8_t init_renderer_backend(
+    const char* app_name, const u16_t app_major, const u16_t app_minor, const u16_t app_patch
 ) {
     // TODO: use a custom allocator
     context.allocator = nullptr;
@@ -66,7 +66,7 @@ QUARK_B8 init_renderer_backend(
         &instance_create_info.enabledExtensionCount);
 
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         instance_create_info.enabledExtensionCount == 0 || instance_create_info.ppEnabledExtensionNames != NULL,
         "Failed to get required Vulkan instance extensions from GLFW"
     );
@@ -79,27 +79,27 @@ QUARK_B8 init_renderer_backend(
     instance_create_info.ppEnabledExtensionNames = extensions;
 
     QUARK_LOG_DEBUG("Enabled Vulkan instance extensions:");
-    for (QUARK_U32 i = 0; i < instance_create_info.enabledExtensionCount; ++i) {
+    for (u32_t i = 0; i < instance_create_info.enabledExtensionCount; ++i) {
         QUARK_LOG_DEBUG("  %s", instance_create_info.ppEnabledExtensionNames[i]);
     }
 
     const char* required_layers[] = {
         "VK_LAYER_KHRONOS_validation",
     };
-    constexpr QUARK_USIZE required_layer_count = sizeof(required_layers) / sizeof(required_layers[0]);
+    constexpr usize_t required_layer_count = sizeof(required_layers) / sizeof(required_layers[0]);
 
-    QUARK_U32 available_layer_count = 0;
-    VK_CHECK_RETURN(vkEnumerateInstanceLayerProperties(&available_layer_count, nullptr), QUARK_FALSE);
+    u32_t available_layer_count = 0;
+    VK_CHECK_RETURN(vkEnumerateInstanceLayerProperties(&available_layer_count, nullptr), false);
     VkLayerProperties available_layers[available_layer_count];
-    VK_CHECK_RETURN(vkEnumerateInstanceLayerProperties(&available_layer_count, available_layers), QUARK_FALSE);
-    for (QUARK_U32 i = 0; i < required_layer_count; ++i) {
-        for (QUARK_U32 j = 0; j < available_layer_count; ++j) {
+    VK_CHECK_RETURN(vkEnumerateInstanceLayerProperties(&available_layer_count, available_layers), false);
+    for (u32_t i = 0; i < required_layer_count; ++i) {
+        for (u32_t j = 0; j < available_layer_count; ++j) {
             if (strcmp(required_layers[i], available_layers[j].layerName) == 0) {
                 goto found;
             }
         }
         QUARK_LOG_ERROR("Required Vulkan layer not found: %s", required_layers[i]);
-        return QUARK_FALSE;
+        return false;
     found:
         QUARK_LOG_DEBUG("Found required Vulkan layer: %s", required_layers[i]);
     }
@@ -107,12 +107,12 @@ QUARK_B8 init_renderer_backend(
     instance_create_info.ppEnabledLayerNames = required_layers;
 #endif // QUARK_DEBUG
 
-    VK_CHECK_RETURN(vkCreateInstance(&instance_create_info, context.allocator, &context.instance), QUARK_FALSE);
+    VK_CHECK_RETURN(vkCreateInstance(&instance_create_info, context.allocator, &context.instance), false);
 
     QUARK_LOG_DEBUG("Created Vulkan instance");
 
 #ifdef QUARK_DEBUG
-    constexpr QUARK_U32 log_severity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
+    constexpr u32_t log_severity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
                                        | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
             // | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
             // | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
@@ -134,7 +134,7 @@ QUARK_B8 init_renderer_backend(
         "vkCreateDebugUtilsMessengerEXT"
     );
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         vkCreateDebugUtilsMessengerEXT != nullptr,
         "Failed to get vkCreateDebugUtilsMessengerEXT function pointer"
     );
@@ -143,7 +143,7 @@ QUARK_B8 init_renderer_backend(
         vkCreateDebugUtilsMessengerEXT(
             context.instance, &debug_create_info, context.allocator, &context.debug_messenger
         ),
-        QUARK_FALSE
+        false
     );
 
     QUARK_LOG_DEBUG("Created Vulkan debug messenger");
@@ -151,17 +151,17 @@ QUARK_B8 init_renderer_backend(
 
     QUARK_LOG_INFO("Initialized renderer backend");
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 shutdown_renderer_backend() {
+b8_t shutdown_renderer_backend() {
 #ifdef QUARK_DEBUG
     const auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(
         context.instance,
         "vkDestroyDebugUtilsMessengerEXT"
     );
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         vkDestroyDebugUtilsMessengerEXT != nullptr,
         "Failed to get vkDestroyDebugUtilsMessengerEXT function pointer"
     );
@@ -174,21 +174,21 @@ QUARK_B8 shutdown_renderer_backend() {
 
     QUARK_LOG_INFO("Shutdown renderer backend");
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 init_renderer_window(GLFWwindow* window) {
+b8_t init_renderer_window(GLFWwindow* window) {
     s_current_window = window;
 
     VK_CHECK_RETURN(
         glfwCreateWindowSurface(context.instance, window, context.allocator, &context.surface),
-        QUARK_FALSE
+        false
     );
 
     if (!create_vulkan_device(&context)) {
         vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
         context.surface = VK_NULL_HANDLE;
-        return QUARK_FALSE;
+        return false;
     }
 
     int framebuffer_width = 0;
@@ -197,13 +197,13 @@ QUARK_B8 init_renderer_window(GLFWwindow* window) {
 
     if (!create_vulkan_swapchain(
             &context,
-            framebuffer_width > 0 ? (QUARK_U32) framebuffer_width : 1,
-            framebuffer_height > 0 ? (QUARK_U32) framebuffer_height : 1
+            framebuffer_width > 0 ? (u32_t) framebuffer_width : 1,
+            framebuffer_height > 0 ? (u32_t) framebuffer_height : 1
         )) {
         destroy_vulkan_device(&context);
         vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
         context.surface = VK_NULL_HANDLE;
-        return QUARK_FALSE;
+        return false;
     }
 
     if (!create_vulkan_graphics_pipeline()) {
@@ -211,14 +211,14 @@ QUARK_B8 init_renderer_window(GLFWwindow* window) {
         destroy_vulkan_device(&context);
         vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
         context.surface = VK_NULL_HANDLE;
-        return QUARK_FALSE;
+        return false;
     }
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 shutdown_renderer_window() {
-    QUARK_B8 success = QUARK_TRUE;
+b8_t shutdown_renderer_window() {
+    b8_t success = true;
     destroy_vulkan_graphics_pipeline();
     success = success && destroy_vulkan_swapchain(&context);
     vkDestroySurfaceKHR(context.instance, context.surface, context.allocator);
@@ -228,26 +228,26 @@ QUARK_B8 shutdown_renderer_window() {
     return success;
 }
 
-QUARK_B8 render_renderer_frame(const Camera* camera) {
-    QUARK_ASSERT_RETURN(QUARK_FALSE, camera != nullptr, "Invalid camera pointer");
+b8_t render_renderer_frame(const Camera* camera) {
+    QUARK_ASSERT_RETURN(false, camera != nullptr, "Invalid camera pointer");
 
     if (context.swapchain.extent.width == 0 || context.swapchain.extent.height == 0) {
-        return QUARK_TRUE;
+        return true;
     }
 
-    const QUARK_F32 aspect_ratio = (QUARK_F32) context.swapchain.extent.width / (QUARK_F32) context.swapchain.extent.height;
+    const f32_t aspect_ratio = (f32_t) context.swapchain.extent.width / (f32_t) context.swapchain.extent.height;
     mat4 view_projection;
     if (!camera_get_view_projection_matrix(camera, aspect_ratio, view_projection)) {
         QUARK_LOG_ERROR("Failed to compute camera view-projection matrix");
-        return QUARK_FALSE;
+        return false;
     }
 
-    const QUARK_U32 frame_index = context.swapchain.current_frame;
+    const u32_t frame_index = context.swapchain.current_frame;
     VkFence frame_fence = context.swapchain.in_flight_fences[frame_index];
 
-    VK_CHECK_RETURN(vkWaitForFences(context.device.logical_device, 1, &frame_fence, VK_TRUE, UINT64_MAX), QUARK_FALSE);
+    VK_CHECK_RETURN(vkWaitForFences(context.device.logical_device, 1, &frame_fence, VK_TRUE, UINT64_MAX), false);
 
-    QUARK_U32 image_index = 0;
+    u32_t image_index = 0;
     const VkResult acquire_result = vkAcquireNextImageKHR(
         context.device.logical_device,
         context.swapchain.swapchain,
@@ -258,16 +258,16 @@ QUARK_B8 render_renderer_frame(const Camera* camera) {
     );
     if (acquire_result == VK_ERROR_OUT_OF_DATE_KHR) {
         vk_recreate_swapchain();
-        return QUARK_TRUE;
+        return true;
     }
     if (acquire_result != VK_SUCCESS && acquire_result != VK_SUBOPTIMAL_KHR) {
         QUARK_LOG_ERROR("Failed to acquire swapchain image: %u", acquire_result);
-        return QUARK_FALSE;
+        return false;
     }
-    VK_CHECK_RETURN(vkResetFences(context.device.logical_device, 1, &frame_fence), QUARK_FALSE);
+    VK_CHECK_RETURN(vkResetFences(context.device.logical_device, 1, &frame_fence), false);
 
     VkCommandBuffer command_buffer = context.swapchain.command_buffers[frame_index];
-    VK_CHECK_RETURN(vkResetCommandBuffer(command_buffer, 0), QUARK_FALSE);
+    VK_CHECK_RETURN(vkResetCommandBuffer(command_buffer, 0), false);
 
     const VkCommandBufferBeginInfo begin_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -275,7 +275,7 @@ QUARK_B8 render_renderer_frame(const Camera* camera) {
         .flags = 0,
         .pInheritanceInfo = nullptr,
     };
-    VK_CHECK_RETURN(vkBeginCommandBuffer(command_buffer, &begin_info), QUARK_FALSE);
+    VK_CHECK_RETURN(vkBeginCommandBuffer(command_buffer, &begin_info), false);
 
     const VkClearValue clear_values[] = {
         {
@@ -299,7 +299,7 @@ QUARK_B8 render_renderer_frame(const Camera* camera) {
             .offset = {.x = 0, .y = 0},
             .extent = context.swapchain.extent,
         },
-        .clearValueCount = (QUARK_U32) (sizeof(clear_values) / sizeof(clear_values[0])),
+        .clearValueCount = (u32_t) (sizeof(clear_values) / sizeof(clear_values[0])),
         .pClearValues = clear_values,
     };
 
@@ -310,13 +310,13 @@ QUARK_B8 render_renderer_frame(const Camera* camera) {
         context.pipeline_layout,
         VK_SHADER_STAGE_VERTEX_BIT,
         0,
-        (QUARK_U32) sizeof(mat4),
+        (u32_t) sizeof(mat4),
         view_projection
     );
     vkCmdDraw(command_buffer, 36, 1, 0, 0);
     vkCmdEndRenderPass(command_buffer);
 
-    VK_CHECK_RETURN(vkEndCommandBuffer(command_buffer), QUARK_FALSE);
+    VK_CHECK_RETURN(vkEndCommandBuffer(command_buffer), false);
 
     const VkSemaphore wait_semaphores[] = {
         context.swapchain.image_available_semaphores[frame_index],
@@ -330,15 +330,15 @@ QUARK_B8 render_renderer_frame(const Camera* camera) {
     const VkSubmitInfo submit_info = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .pNext = nullptr,
-        .waitSemaphoreCount = (QUARK_U32) (sizeof(wait_semaphores) / sizeof(wait_semaphores[0])),
+        .waitSemaphoreCount = (u32_t) (sizeof(wait_semaphores) / sizeof(wait_semaphores[0])),
         .pWaitSemaphores = wait_semaphores,
         .pWaitDstStageMask = wait_stages,
         .commandBufferCount = 1,
         .pCommandBuffers = &command_buffer,
-        .signalSemaphoreCount = (QUARK_U32) (sizeof(signal_semaphores) / sizeof(signal_semaphores[0])),
+        .signalSemaphoreCount = (u32_t) (sizeof(signal_semaphores) / sizeof(signal_semaphores[0])),
         .pSignalSemaphores = signal_semaphores,
     };
-    VK_CHECK_RETURN(vkQueueSubmit(context.device.graphics_queue, 1, &submit_info, frame_fence), QUARK_FALSE);
+    VK_CHECK_RETURN(vkQueueSubmit(context.device.graphics_queue, 1, &submit_info, frame_fence), false);
 
     const VkSwapchainKHR swapchains[] = {
         context.swapchain.swapchain,
@@ -346,9 +346,9 @@ QUARK_B8 render_renderer_frame(const Camera* camera) {
     const VkPresentInfoKHR present_info = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .pNext = nullptr,
-        .waitSemaphoreCount = (QUARK_U32) (sizeof(signal_semaphores) / sizeof(signal_semaphores[0])),
+        .waitSemaphoreCount = (u32_t) (sizeof(signal_semaphores) / sizeof(signal_semaphores[0])),
         .pWaitSemaphores = signal_semaphores,
-        .swapchainCount = (QUARK_U32) (sizeof(swapchains) / sizeof(swapchains[0])),
+        .swapchainCount = (u32_t) (sizeof(swapchains) / sizeof(swapchains[0])),
         .pSwapchains = swapchains,
         .pImageIndices = &image_index,
         .pResults = nullptr,
@@ -357,20 +357,20 @@ QUARK_B8 render_renderer_frame(const Camera* camera) {
     const VkResult present_result = vkQueuePresentKHR(context.device.present_queue, &present_info);
     if (present_result == VK_ERROR_OUT_OF_DATE_KHR || present_result == VK_SUBOPTIMAL_KHR || context.swapchain.framebuffer_resized) {
         if (!vk_recreate_swapchain()) {
-            return QUARK_FALSE;
+            return false;
         }
     } else if (present_result != VK_SUCCESS) {
         QUARK_LOG_ERROR("Failed to present swapchain image: %u", present_result);
-        return QUARK_FALSE;
+        return false;
     }
 
     context.swapchain.current_frame = (context.swapchain.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 
-    return QUARK_TRUE;
+    return true;
 }
 
 void on_framebuffer_resized() {
-    context.swapchain.framebuffer_resized = QUARK_TRUE;
+    context.swapchain.framebuffer_resized = true;
 }
 
 #ifdef QUARK_DEBUG
@@ -401,7 +401,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
 }
 #endif // QUARK_DEBUG
 
-static QUARK_B8 vk_recreate_swapchain() {
+static b8_t vk_recreate_swapchain() {
     int framebuffer_width = 0;
     int framebuffer_height = 0;
     glfwGetFramebufferSize(s_current_window, &framebuffer_width, &framebuffer_height);
@@ -417,24 +417,24 @@ static QUARK_B8 vk_recreate_swapchain() {
 
     destroy_vulkan_swapchain(&context);
 
-    if (!create_vulkan_swapchain(&context, (QUARK_U32) framebuffer_width, (QUARK_U32) framebuffer_height)) {
+    if (!create_vulkan_swapchain(&context, (u32_t) framebuffer_width, (u32_t) framebuffer_height)) {
         QUARK_LOG_ERROR("Failed to recreate swapchain");
-        return QUARK_FALSE;
+        return false;
     }
 
     if (!create_vulkan_graphics_pipeline()) {
         QUARK_LOG_ERROR("Failed to recreate graphics pipeline");
-        return QUARK_FALSE;
+        return false;
     }
 
-    context.swapchain.framebuffer_resized = QUARK_FALSE;
+    context.swapchain.framebuffer_resized = false;
 
     QUARK_LOG_DEBUG("Swapchain recreated with dimensions %ux%u", framebuffer_width, framebuffer_height);
-    return QUARK_TRUE;
+    return true;
 }
 
-static QUARK_B8 read_binary_file(const char* path, QUARK_U8** out_data, QUARK_USIZE* out_size) {
-    QUARK_ASSERT_RETURN(QUARK_FALSE, out_data != nullptr && out_size != nullptr, "Invalid output pointers");
+static b8_t read_binary_file(const char* path, u8_t** out_data, usize_t* out_size) {
+    QUARK_ASSERT_RETURN(false, out_data != nullptr && out_size != nullptr, "Invalid output pointers");
 
     *out_data = nullptr;
     *out_size = 0;
@@ -442,56 +442,56 @@ static QUARK_B8 read_binary_file(const char* path, QUARK_U8** out_data, QUARK_US
     FILE* file = nullptr;
     if (fopen_s(&file, path, "rb") != 0 || file == nullptr) {
         QUARK_LOG_ERROR("Failed to open shader file: %s", path);
-        return QUARK_FALSE;
+        return false;
     }
 
     if (fseek(file, 0, SEEK_END) != 0) {
         fclose(file);
         QUARK_LOG_ERROR("Failed to seek shader file: %s", path);
-        return QUARK_FALSE;
+        return false;
     }
 
     const long file_size = ftell(file);
     if (file_size <= 0) {
         fclose(file);
         QUARK_LOG_ERROR("Shader file is empty or invalid: %s", path);
-        return QUARK_FALSE;
+        return false;
     }
 
     if (fseek(file, 0, SEEK_SET) != 0) {
         fclose(file);
         QUARK_LOG_ERROR("Failed to rewind shader file: %s", path);
-        return QUARK_FALSE;
+        return false;
     }
 
-    QUARK_U8* data = mem_heap_alloc((QUARK_USIZE) file_size);
+    u8_t* data = mem_heap_alloc((usize_t) file_size);
     if (data == nullptr) {
         fclose(file);
         QUARK_LOG_ERROR("Failed to allocate memory for shader file: %s", path);
-        return QUARK_FALSE;
+        return false;
     }
 
-    const QUARK_USIZE bytes_read = fread(data, 1, (QUARK_USIZE) file_size, file);
+    const usize_t bytes_read = fread(data, 1, (usize_t) file_size, file);
     fclose(file);
 
-    if (bytes_read != (QUARK_USIZE) file_size) {
+    if (bytes_read != (usize_t) file_size) {
         mem_heap_free(data);
         QUARK_LOG_ERROR("Failed to read shader file: %s", path);
-        return QUARK_FALSE;
+        return false;
     }
 
     *out_data = data;
-    *out_size = (QUARK_USIZE) file_size;
-    return QUARK_TRUE;
+    *out_size = (usize_t) file_size;
+    return true;
 }
 
-static QUARK_B8 create_shader_module_from_file(const char* path, VkShaderModule* out_module) {
-    QUARK_ASSERT_RETURN(QUARK_FALSE, out_module != nullptr, "Invalid output shader module pointer");
+static b8_t create_shader_module_from_file(const char* path, VkShaderModule* out_module) {
+    QUARK_ASSERT_RETURN(false, out_module != nullptr, "Invalid output shader module pointer");
 
-    QUARK_U8* shader_code = nullptr;
-    QUARK_USIZE shader_code_size = 0;
+    u8_t* shader_code = nullptr;
+    usize_t shader_code_size = 0;
     if (!read_binary_file(path, &shader_code, &shader_code_size)) {
-        return QUARK_FALSE;
+        return false;
     }
 
     const VkShaderModuleCreateInfo shader_module_create_info = {
@@ -499,7 +499,7 @@ static QUARK_B8 create_shader_module_from_file(const char* path, VkShaderModule*
         .pNext = nullptr,
         .flags = 0,
         .codeSize = shader_code_size,
-        .pCode = (const QUARK_U32*) shader_code,
+        .pCode = (const u32_t*) shader_code,
     };
 
     VK_CHECK_X(
@@ -511,27 +511,27 @@ static QUARK_B8 create_shader_module_from_file(const char* path, VkShaderModule*
         ),
         {
             mem_heap_free(shader_code);
-            return QUARK_FALSE;
+            return false;
         }
     );
 
     mem_heap_free(shader_code);
-    return QUARK_TRUE;
+    return true;
 }
 
-static QUARK_B8 create_vulkan_graphics_pipeline() {
-    QUARK_ASSERT_RETURN(QUARK_FALSE, context.swapchain.render_pass != VK_NULL_HANDLE, "Render pass must be created before the graphics pipeline");
+static b8_t create_vulkan_graphics_pipeline() {
+    QUARK_ASSERT_RETURN(false, context.swapchain.render_pass != VK_NULL_HANDLE, "Render pass must be created before the graphics pipeline");
 
     VkShaderModule vertex_shader_module = VK_NULL_HANDLE;
     VkShaderModule fragment_shader_module = VK_NULL_HANDLE;
 
     if (!create_shader_module_from_file(vertex_shader_path, &vertex_shader_module)) {
-        return QUARK_FALSE;
+        return false;
     }
 
     if (!create_shader_module_from_file(fragment_shader_path, &fragment_shader_module)) {
         vkDestroyShaderModule(context.device.logical_device, vertex_shader_module, context.allocator);
-        return QUARK_FALSE;
+        return false;
     }
 
     const VkPipelineShaderStageCreateInfo shader_stages[] = {
@@ -668,7 +668,7 @@ static QUARK_B8 create_vulkan_graphics_pipeline() {
     const VkPushConstantRange camera_push_constant_range = {
         .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
         .offset = 0,
-        .size = (QUARK_U32) sizeof(mat4),
+        .size = (u32_t) sizeof(mat4),
     };
 
     const VkPipelineLayoutCreateInfo pipeline_layout_create_info = {
@@ -691,7 +691,7 @@ static QUARK_B8 create_vulkan_graphics_pipeline() {
         {
             vkDestroyShaderModule(context.device.logical_device, fragment_shader_module, context.allocator);
             vkDestroyShaderModule(context.device.logical_device, vertex_shader_module, context.allocator);
-            return QUARK_FALSE;
+            return false;
         }
     );
 
@@ -699,7 +699,7 @@ static QUARK_B8 create_vulkan_graphics_pipeline() {
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .stageCount = (QUARK_U32) (sizeof(shader_stages) / sizeof(shader_stages[0])),
+        .stageCount = (u32_t) (sizeof(shader_stages) / sizeof(shader_stages[0])),
         .pStages = shader_stages,
         .pVertexInputState = &vertex_input_state,
         .pInputAssemblyState = &input_assembly_state,
@@ -731,7 +731,7 @@ static QUARK_B8 create_vulkan_graphics_pipeline() {
             context.pipeline_layout = VK_NULL_HANDLE;
             vkDestroyShaderModule(context.device.logical_device, fragment_shader_module, context.allocator);
             vkDestroyShaderModule(context.device.logical_device, vertex_shader_module, context.allocator);
-            return QUARK_FALSE;
+            return false;
         }
     );
 
@@ -739,7 +739,7 @@ static QUARK_B8 create_vulkan_graphics_pipeline() {
     vkDestroyShaderModule(context.device.logical_device, vertex_shader_module, context.allocator);
 
     QUARK_LOG_DEBUG("Created Vulkan graphics pipeline for hardcoded triangle");
-    return QUARK_TRUE;
+    return true;
 }
 
 static void destroy_vulkan_graphics_pipeline() {

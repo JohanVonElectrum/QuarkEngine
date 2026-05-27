@@ -1,8 +1,7 @@
 #pragma once
 
 #include "vk.h"
+#include <cstdlib/common.h>
 
-#include <quark/primitives.h>
-
-QUARK_B8 create_vulkan_swapchain(VulkanContext* context, QUARK_U32 framebuffer_width, QUARK_U32 framebuffer_height);
-QUARK_B8 destroy_vulkan_swapchain(VulkanContext* context);
+b8_t create_vulkan_swapchain(VulkanContext* context, u32_t framebuffer_width, u32_t framebuffer_height);
+b8_t destroy_vulkan_swapchain(VulkanContext* context);

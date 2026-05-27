@@ -5,8 +5,8 @@
 
 #include <cglm/call.h>
 
-static QUARK_B8 camera_get_view_matrix(const Camera* in_camera, mat4 out_matrix) {
-    QUARK_ASSERT_RETURN(QUARK_FALSE, in_camera != nullptr && out_matrix != nullptr, "Invalid camera or output matrix pointer");
+static b8_t camera_get_view_matrix(const Camera* in_camera, mat4 out_matrix) {
+    QUARK_ASSERT_RETURN(false, in_camera != nullptr && out_matrix != nullptr, "Invalid camera or output matrix pointer");
     const auto camera = (Camera*)in_camera;
 
     vec3 forward = {0.0f, 0.0f, 0.0f};
@@ -16,20 +16,20 @@ static QUARK_B8 camera_get_view_matrix(const Camera* in_camera, mat4 out_matrix)
 
     if (glm_vec3_norm2(camera->forward) <= 0.0f) {
         QUARK_LOG_ERROR("Camera forward vector must not be zero-length");
-        return QUARK_FALSE;
+        return false;
     }
     glm_normalize_to(camera->forward, forward);
 
     if (glm_vec3_norm2(camera->up) <= 0.0f) {
         QUARK_LOG_ERROR("Camera up vector must not be zero-length");
-        return QUARK_FALSE;
+        return false;
     }
     glm_normalize_to(camera->up, up);
 
     glm_vec3_cross(forward, up, side);
     if (glm_vec3_norm2(side) <= 0.0f) {
         QUARK_LOG_ERROR("Camera forward and up vectors must not be parallel");
-        return QUARK_FALSE;
+        return false;
     }
     glm_normalize(side);
 
@@ -38,46 +38,46 @@ static QUARK_B8 camera_get_view_matrix(const Camera* in_camera, mat4 out_matrix)
 
     glm_look(camera->position, forward, adjusted_up, out_matrix);
 
-    return QUARK_TRUE;
+    return true;
 }
 
-static QUARK_B8 camera_get_perspective_projection_matrix(const Camera* camera, const QUARK_F32 aspect_ratio, mat4 out_matrix) {
-    QUARK_ASSERT_RETURN(QUARK_FALSE, camera != nullptr && out_matrix != nullptr, "Invalid camera or output matrix pointer");
+static b8_t camera_get_perspective_projection_matrix(const Camera* camera, const f32_t aspect_ratio, mat4 out_matrix) {
+    QUARK_ASSERT_RETURN(false, camera != nullptr && out_matrix != nullptr, "Invalid camera or output matrix pointer");
 
     if (aspect_ratio <= 0.0f) {
         QUARK_LOG_ERROR("Camera aspect ratio must be greater than zero");
-        return QUARK_FALSE;
+        return false;
     }
 
     if (camera->fov_y_radians <= 0.0f || camera->fov_y_radians >= CGLM_PI) {
         QUARK_LOG_ERROR("Camera field of view must be within the open interval (0, pi)");
-        return QUARK_FALSE;
+        return false;
     }
 
     if (camera->near_plane <= 0.0f || camera->far_plane <= camera->near_plane) {
         QUARK_LOG_ERROR("Camera near/far planes must satisfy 0 < near < far");
-        return QUARK_FALSE;
+        return false;
     }
 
     glm_perspective_rh_no(camera->fov_y_radians, aspect_ratio, camera->near_plane, camera->far_plane, out_matrix);
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 camera_get_view_projection_matrix(const Camera* camera, const QUARK_F32 aspect_ratio, mat4 out_matrix) {
-    QUARK_ASSERT_RETURN(QUARK_FALSE, camera != nullptr && out_matrix != nullptr, "Invalid camera or output matrix pointer");
+b8_t camera_get_view_projection_matrix(const Camera* camera, const f32_t aspect_ratio, mat4 out_matrix) {
+    QUARK_ASSERT_RETURN(false, camera != nullptr && out_matrix != nullptr, "Invalid camera or output matrix pointer");
 
     mat4 view_matrix;
     mat4 projection_matrix;
 
     if (!camera_get_view_matrix(camera, view_matrix)) {
-        return QUARK_FALSE;
+        return false;
     }
 
     if (!camera_get_perspective_projection_matrix(camera, aspect_ratio, projection_matrix)) {
-        return QUARK_FALSE;
+        return false;
     }
 
     glm_mat4_mul(projection_matrix, view_matrix, out_matrix);
-    return QUARK_TRUE;
+    return true;
 }

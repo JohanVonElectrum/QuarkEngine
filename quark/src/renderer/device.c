@@ -6,29 +6,29 @@
 
 static QueueFamilyInfo make_invalid_queue_family_info();
 static void free_swapchain_support_details(SwapchainSupportDetails* swapchain_support_details);
-static QUARK_B8 extension_supported(
+static b8_t extension_supported(
     const VkExtensionProperties* available_extensions,
-    QUARK_U32 available_extension_count,
+    u32_t available_extension_count,
     const char* extension_name
 );
 
-QUARK_B8 select_physical_device(VulkanContext* context);
-QUARK_B8 create_vulkan_logical_device(VulkanContext* context);
-QUARK_B8 destroy_vulkan_logical_device(VulkanContext* context);
+b8_t select_physical_device(VulkanContext* context);
+b8_t create_vulkan_logical_device(VulkanContext* context);
+b8_t destroy_vulkan_logical_device(VulkanContext* context);
 
-QUARK_B8 create_vulkan_device(VulkanContext* context) {
+b8_t create_vulkan_device(VulkanContext* context) {
     if (!select_physical_device(context)) {
-        return QUARK_FALSE;
+        return false;
     }
 
     if (!create_vulkan_logical_device(context)) {
-        return QUARK_FALSE;
+        return false;
     }
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 destroy_vulkan_device(VulkanContext* context) {
+b8_t destroy_vulkan_device(VulkanContext* context) {
     destroy_vulkan_logical_device(context);
     free_swapchain_support_details(&context->device.swapchain_support);
     context->device.queue_families = make_invalid_queue_family_info();
@@ -39,7 +39,7 @@ QUARK_B8 destroy_vulkan_device(VulkanContext* context) {
     context->device.present_queue = VK_NULL_HANDLE;
     context->device.compute_queue = VK_NULL_HANDLE;
     context->device.transfer_queue = VK_NULL_HANDLE;
-    return QUARK_TRUE;
+    return true;
 }
 
 static QueueFamilyInfo make_invalid_queue_family_info() {
@@ -52,20 +52,20 @@ static QueueFamilyInfo make_invalid_queue_family_info() {
         .compute_count = 0,
         .transfer = QUARK_VK_INVALID_QUEUE_FAMILY_INDEX,
         .transfer_count = 0,
-        .dedicated_transfer = QUARK_FALSE,
+        .dedicated_transfer = false,
     };
 }
 
 static void free_swapchain_support_details(SwapchainSupportDetails* swapchain_support_details) {
     if (swapchain_support_details->formats != nullptr) {
-        if (mem_heap_free(swapchain_support_details->formats) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain_support_details->formats) == false) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
         }
         swapchain_support_details->formats = nullptr;
     }
 
     if (swapchain_support_details->present_modes != nullptr) {
-        if (mem_heap_free(swapchain_support_details->present_modes) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain_support_details->present_modes) == false) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
         }
         swapchain_support_details->present_modes = nullptr;
@@ -75,21 +75,21 @@ static void free_swapchain_support_details(SwapchainSupportDetails* swapchain_su
     swapchain_support_details->present_mode_count = 0;
 }
 
-static QUARK_B8 extension_supported(
+static b8_t extension_supported(
     const VkExtensionProperties* available_extensions,
-    const QUARK_U32 available_extension_count,
+    const u32_t available_extension_count,
     const char* extension_name
 ) {
-    for (QUARK_U32 i = 0; i < available_extension_count; ++i) {
+    for (u32_t i = 0; i < available_extension_count; ++i) {
         if (strcmp(extension_name, available_extensions[i].extensionName) == 0) {
-            return QUARK_TRUE;
+            return true;
         }
     }
 
-    return QUARK_FALSE;
+    return false;
 }
 
-QUARK_B8 select_physical_device(VulkanContext* context) {
+b8_t select_physical_device(VulkanContext* context) {
     free_swapchain_support_details(&context->device.swapchain_support);
     context->device.queue_families = make_invalid_queue_family_info();
     context->device.feature_support = (DeviceFeatureSupport) {0};
@@ -99,24 +99,24 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
     context->device.compute_queue = VK_NULL_HANDLE;
     context->device.transfer_queue = VK_NULL_HANDLE;
 
-    QUARK_U32 physical_device_count = 0;
+    u32_t physical_device_count = 0;
     VK_CHECK_RETURN(
         vkEnumeratePhysicalDevices(context->instance, &physical_device_count, nullptr),
-        QUARK_FALSE
+        false
     );
     if (physical_device_count == 0) {
         QUARK_LOG_ERROR("No devices with Vulkan support found");
-        return QUARK_FALSE;
+        return false;
     }
     VkPhysicalDevice physical_devices[physical_device_count];
     VK_CHECK_RETURN(
         vkEnumeratePhysicalDevices(context->instance, &physical_device_count, physical_devices),
-        QUARK_FALSE
+        false
     );
 
     char device_name[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE] = {0};
-    QUARK_U32 best_score = 0;
-    for (QUARK_U32 i = 0; i < physical_device_count; ++i) {
+    u32_t best_score = 0;
+    for (u32_t i = 0; i < physical_device_count; ++i) {
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(physical_devices[i], &properties);
         VkPhysicalDeviceMemoryProperties memory_properties;
@@ -142,13 +142,13 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
 
         DeviceFeatureSupport feature_support = {
             .core = features_2.features,
-            .acceleration_structure = acceleration_structure_features.accelerationStructure ? QUARK_TRUE : QUARK_FALSE,
-            .ray_query = ray_query_features.rayQuery ? QUARK_TRUE : QUARK_FALSE,
-            .ray_tracing_pipeline = ray_tracing_pipeline_features.rayTracingPipeline ? QUARK_TRUE : QUARK_FALSE,
-            .hardware_ray_tracing = QUARK_FALSE,
+            .acceleration_structure = acceleration_structure_features.accelerationStructure ? true : false,
+            .ray_query = ray_query_features.rayQuery ? true : false,
+            .ray_tracing_pipeline = ray_tracing_pipeline_features.rayTracingPipeline ? true : false,
+            .hardware_ray_tracing = false,
         };
 
-        QUARK_U32 score = 0;
+        u32_t score = 0;
 
         switch (properties.deviceType) {
             case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
@@ -167,24 +167,24 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                 break;
         }
 
-        QUARK_U64 device_local_memory = 0;
-        for (QUARK_U32 j = 0; j < memory_properties.memoryHeapCount; ++j) {
+        u64_t device_local_memory = 0;
+        for (u32_t j = 0; j < memory_properties.memoryHeapCount; ++j) {
             if (memory_properties.memoryHeaps[j].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
                 device_local_memory += memory_properties.memoryHeaps[j].size;
             }
         }
-        score += (QUARK_U32) (1000 * device_local_memory / (1024 * 1024 * 1024));
+        score += (u32_t) (1000 * device_local_memory / (1024 * 1024 * 1024));
 
         QueueFamilyInfo queue_family_info = make_invalid_queue_family_info();
 
-        QUARK_U32 queue_family_count = 0;
+        u32_t queue_family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i], &queue_family_count, nullptr);
         VkQueueFamilyProperties queue_families[queue_family_count];
         vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i], &queue_family_count, queue_families);
 
-        QUARK_U8 min_transfer_score = 255;
-        for (QUARK_U32 j = 0; j < queue_family_count; ++j) {
-            QUARK_U8 transfer_score = 0;
+        u8_t min_transfer_score = 255;
+        for (u32_t j = 0; j < queue_family_count; ++j) {
+            u8_t transfer_score = 0;
 
             if (queue_families[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 if (queue_families[j].queueCount > queue_family_info.graphics_count) {
@@ -218,7 +218,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
             VkBool32 present_support = VK_FALSE;
             VK_CHECK_RETURN(
                 vkGetPhysicalDeviceSurfaceSupportKHR(physical_devices[i], j, context->surface, &present_support),
-                QUARK_FALSE
+                false
             );
             if (present_support && (queue_family_info.present == QUARK_VK_INVALID_QUEUE_FAMILY_INDEX || queue_families[j].queueCount < queue_family_info.present_count)) {
                 queue_family_info.present = j;
@@ -245,12 +245,12 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
         VK_CHECK_RETURN(
             vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_devices[i], context->surface, &swapchain_support_details.
                 capabilities),
-            QUARK_FALSE
+            false
         );
         VK_CHECK_RETURN(
             vkGetPhysicalDeviceSurfaceFormatsKHR(physical_devices[i], context->surface, &swapchain_support_details.
                 format_count, nullptr),
-            QUARK_FALSE
+            false
         );
         if (swapchain_support_details.format_count != 0) {
             swapchain_support_details.formats = mem_heap_alloc(
@@ -258,7 +258,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
 
             if (swapchain_support_details.formats == nullptr) {
                 QUARK_LOG_ERROR("Failed to allocate memory for swapchain surface formats");
-                return QUARK_FALSE;
+                return false;
             }
 
             VK_CHECK_X(
@@ -266,7 +266,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                     format_count, swapchain_support_details.formats),
                 {
                     free_swapchain_support_details(&swapchain_support_details);
-                    return QUARK_FALSE;
+                    return false;
                 }
             );
         }
@@ -275,7 +275,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                 present_mode_count, nullptr),
             {
                 free_swapchain_support_details(&swapchain_support_details);
-                return QUARK_FALSE;
+                return false;
             }
         );
         if (swapchain_support_details.present_mode_count != 0) {
@@ -285,7 +285,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
             if (swapchain_support_details.present_modes == nullptr) {
                 QUARK_LOG_ERROR("Failed to allocate memory for swapchain surface present modes");
                 free_swapchain_support_details(&swapchain_support_details);
-                return QUARK_FALSE;
+                return false;
             }
 
             VK_CHECK_X(
@@ -293,7 +293,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                     swapchain_support_details.present_mode_count, swapchain_support_details.present_modes),
                 {
                     free_swapchain_support_details(&swapchain_support_details);
-                    return QUARK_FALSE;
+                    return false;
                 }
             );
         }
@@ -305,13 +305,13 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
         const char* required_extensions[] = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
         };
-        QUARK_U32 required_extension_count = sizeof(required_extensions) / sizeof(required_extensions[0]);
-        QUARK_U32 available_extension_count = 0;
+        u32_t required_extension_count = sizeof(required_extensions) / sizeof(required_extensions[0]);
+        u32_t available_extension_count = 0;
         VK_CHECK_X(
             vkEnumerateDeviceExtensionProperties(physical_devices[i], nullptr, &available_extension_count, nullptr),
             {
                 free_swapchain_support_details(&swapchain_support_details);
-                return QUARK_FALSE;
+                return false;
             }
         );
         VkExtensionProperties available_extensions[available_extension_count];
@@ -320,11 +320,11 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
                 available_extensions),
             {
                 free_swapchain_support_details(&swapchain_support_details);
-                return QUARK_FALSE;
+                return false;
             }
         );
-        for (QUARK_U32 j = 0; j < required_extension_count; ++j) {
-            for (QUARK_U32 k = 0; k < available_extension_count; ++k) {
+        for (u32_t j = 0; j < required_extension_count; ++j) {
+            for (u32_t k = 0; k < available_extension_count; ++k) {
                 if (strcmp(required_extensions[j], available_extensions[k].extensionName) == 0) {
                     goto found;
                 }
@@ -336,27 +336,27 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
             // found is just a label to continue the outer loop
         }
 
-        const QUARK_B8 supports_acceleration_structure_extension = extension_supported(
+        const b8_t supports_acceleration_structure_extension = extension_supported(
             available_extensions, available_extension_count, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME
         );
-        const QUARK_B8 supports_ray_query_extension = extension_supported(
+        const b8_t supports_ray_query_extension = extension_supported(
             available_extensions, available_extension_count, VK_KHR_RAY_QUERY_EXTENSION_NAME
         );
-        const QUARK_B8 supports_ray_tracing_pipeline_extension = extension_supported(
+        const b8_t supports_ray_tracing_pipeline_extension = extension_supported(
             available_extensions, available_extension_count, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME
         );
-        const QUARK_B8 supports_deferred_host_operations_extension = extension_supported(
+        const b8_t supports_deferred_host_operations_extension = extension_supported(
             available_extensions, available_extension_count, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME
         );
 
-        const QUARK_B8 pipeline_ray_tracing_supported =
+        const b8_t pipeline_ray_tracing_supported =
             feature_support.acceleration_structure &&
             feature_support.ray_tracing_pipeline &&
             supports_acceleration_structure_extension &&
             supports_ray_tracing_pipeline_extension &&
             supports_deferred_host_operations_extension;
 
-        const QUARK_B8 ray_query_supported =
+        const b8_t ray_query_supported =
             feature_support.acceleration_structure &&
             feature_support.ray_query &&
             supports_acceleration_structure_extension &&
@@ -400,7 +400,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
 
     if (context->device.physical_device == VK_NULL_HANDLE) {
         QUARK_LOG_ERROR("Failed to find a suitable physical device");
-        return QUARK_FALSE;
+        return false;
     }
 
     QUARK_LOG_DEBUG("Selected physical device: %s", device_name);
@@ -416,24 +416,24 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
         context->device.feature_support.hardware_ray_tracing ? "yes" : "no"
     );
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 create_vulkan_logical_device(VulkanContext* context) {
-    const QUARK_U32 unique_queue_families[] = {
+b8_t create_vulkan_logical_device(VulkanContext* context) {
+    const u32_t unique_queue_families[] = {
         context->device.queue_families.graphics,
         context->device.queue_families.present,
         context->device.queue_families.compute,
         context->device.queue_families.transfer,
     };
-    QUARK_U32 unique_family_count = 0;
-    QUARK_U32 deduped_families[4];
+    u32_t unique_family_count = 0;
+    u32_t deduped_families[4];
 
-    for (QUARK_U32 i = 0; i < 4; ++i) {
-        QUARK_B8 already_added = QUARK_FALSE;
-        for (QUARK_U32 j = 0; j < unique_family_count; ++j) {
+    for (u32_t i = 0; i < 4; ++i) {
+        b8_t already_added = false;
+        for (u32_t j = 0; j < unique_family_count; ++j) {
             if (deduped_families[j] == unique_queue_families[i]) {
-                already_added = QUARK_TRUE;
+                already_added = true;
                 break;
             }
         }
@@ -445,8 +445,8 @@ QUARK_B8 create_vulkan_logical_device(VulkanContext* context) {
     VkDeviceQueueCreateInfo queue_create_infos[unique_family_count];
     constexpr float queue_priorities[] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
 
-    for (QUARK_U32 i = 0; i < unique_family_count; ++i) {
-        QUARK_U32 queue_count = 0;
+    for (u32_t i = 0; i < unique_family_count; ++i) {
+        u32_t queue_count = 0;
 
         if (deduped_families[i] == context->device.queue_families.graphics) {
             queue_count = context->device.queue_families.graphics_count;
@@ -471,20 +471,20 @@ QUARK_B8 create_vulkan_logical_device(VulkanContext* context) {
     }
 
     const char* enabled_extensions[5];
-    QUARK_U32 enabled_extension_count = 0;
+    u32_t enabled_extension_count = 0;
 
-    QUARK_U32 available_extension_count = 0;
+    u32_t available_extension_count = 0;
     VK_CHECK_RETURN(
         vkEnumerateDeviceExtensionProperties(context->device.physical_device, nullptr, &available_extension_count,
             nullptr),
-        QUARK_FALSE
+        false
     );
 
     VkExtensionProperties available_extensions[available_extension_count];
     VK_CHECK_RETURN(
         vkEnumerateDeviceExtensionProperties(context->device.physical_device, nullptr, &available_extension_count,
             available_extensions),
-        QUARK_FALSE
+        false
     );
 
     enabled_extensions[enabled_extension_count++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
@@ -516,7 +516,7 @@ QUARK_B8 create_vulkan_logical_device(VulkanContext* context) {
     }
 
     QUARK_LOG_DEBUG("Enabled device extensions:");
-    for (QUARK_U32 i = 0; i < enabled_extension_count; ++i) {
+    for (u32_t i = 0; i < enabled_extension_count; ++i) {
         QUARK_LOG_DEBUG("  %s", enabled_extensions[i]);
     }
 
@@ -571,7 +571,7 @@ QUARK_B8 create_vulkan_logical_device(VulkanContext* context) {
     VK_CHECK_RETURN(
         vkCreateDevice(context->device.physical_device, &device_create_info, context->allocator,
             &context->device.logical_device),
-        QUARK_FALSE
+        false
     );
 
     vkGetDeviceQueue(context->device.logical_device, context->device.queue_families.graphics, 0,
@@ -584,7 +584,7 @@ QUARK_B8 create_vulkan_logical_device(VulkanContext* context) {
         &context->device.transfer_queue);
 
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         context->device.graphics_queue != VK_NULL_HANDLE &&
         context->device.present_queue != VK_NULL_HANDLE &&
         context->device.compute_queue != VK_NULL_HANDLE &&
@@ -594,10 +594,10 @@ QUARK_B8 create_vulkan_logical_device(VulkanContext* context) {
 
     QUARK_LOG_DEBUG("Created Vulkan logical device with %u queue families", unique_family_count);
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 destroy_vulkan_logical_device(VulkanContext* context) {
+b8_t destroy_vulkan_logical_device(VulkanContext* context) {
     context->device.graphics_queue = VK_NULL_HANDLE;
     context->device.present_queue = VK_NULL_HANDLE;
     context->device.compute_queue = VK_NULL_HANDLE;
@@ -608,5 +608,5 @@ QUARK_B8 destroy_vulkan_logical_device(VulkanContext* context) {
         context->device.logical_device = VK_NULL_HANDLE;
         QUARK_LOG_DEBUG("Destroyed Vulkan logical device");
     }
-    return QUARK_TRUE;
+    return true;
 }

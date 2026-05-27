@@ -2,6 +2,7 @@
 
 #ifdef QUARK_DEBUG
 #ifdef QUARK_PLATFORM_WINDOWS
+#include <intrin.h>
 #define QUARK_DEBUGBREAK() __debugbreak()
 #elifdef QUARK_PLATFORM_LINUX
 #include <signal.h>

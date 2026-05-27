@@ -1,13 +1,13 @@
 #pragma once
 
-#include <quark/primitives.h>
+#include <cstdlib/common.h>
 
 typedef struct EventQueue EventQueue;
 
-EventQueue* create_event_queue(QUARK_USIZE capacity);
-QUARK_B8 destroy_event_queue(EventQueue* queue);
+EventQueue* create_event_queue(usize_t capacity);
+b8_t destroy_event_queue(EventQueue* queue);
 
-typedef QUARK_U16 QuarkEventId;
+typedef u16_t QuarkEventId;
 typedef void* QuarkEventData;
 
 typedef enum EventQueueResult

@@ -5,7 +5,7 @@
 #include <quark/core/log.h>
 
 #undef QUARK_LOG_INTERNAL_ENGINE
-#define QUARK_LOG_INTERNAL_ENGINE QUARK_TRUE
+#define QUARK_LOG_INTERNAL_ENGINE true
 
 int main(const int argc, char** argv) {
     if (!init_quark(argc, argv)) {
@@ -51,4 +51,4 @@ engine_shutdown:
 }
 
 #undef QUARK_LOG_INTERNAL_ENGINE
-#define QUARK_LOG_INTERNAL_ENGINE QUARK_FALSE
+#define QUARK_LOG_INTERNAL_ENGINE false

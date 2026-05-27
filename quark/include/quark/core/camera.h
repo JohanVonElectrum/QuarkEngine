@@ -1,15 +1,19 @@
 #pragma once
 
-#include <quark/primitives.h>
-
+#include <cstdlib/common.h>
 #include <cglm/types.h>
 
+/**
+ * Simple perspective camera definition.
+ *
+ * Used to compute view-projection matrices for rendering.
+ */
 typedef struct
 {
     vec3 position;
     vec3 forward;
     vec3 up;
-    QUARK_F32 fov_y_radians;
-    QUARK_F32 near_plane;
-    QUARK_F32 far_plane;
+    f32_t fov_y_radians;
+    f32_t near_plane;
+    f32_t far_plane;
 } Camera;

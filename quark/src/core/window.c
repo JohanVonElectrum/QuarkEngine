@@ -18,8 +18,8 @@ void framebuffer_resize_callback(GLFWwindow* window, int width, int height) {
     on_framebuffer_resized();
 }
 
-QUARK_B8 init_windowing() {
-    const QUARK_B8 initialized = glfwInit();
+b8_t init_windowing() {
+    const b8_t initialized = glfwInit();
 
     glfwSetErrorCallback(error_callback);
 
@@ -35,15 +35,15 @@ QUARK_B8 init_windowing() {
     glfwSetErrorCallback(previous_callback); \
     if (error != GLFW_NO_ERROR) { \
     error_callback(error, description); \
-    return QUARK_FALSE; \
+    return false; \
     } \
-    return QUARK_TRUE
+    return true
 
-QUARK_B8 shutdown_windowing() {
+b8_t shutdown_windowing() {
     EXECUTE_UNHANDLED(glfwTerminate());
 }
 
-QUARK_B8 windowing_poll_events() {
+b8_t windowing_poll_events() {
     EXECUTE_UNHANDLED(glfwPollEvents());
 }
 
@@ -87,9 +87,9 @@ QuarkWindow* create_window(const WindowCreateInfo* create_info) {
     return quark_window;
 }
 
-QUARK_B8 destroy_window(QuarkWindow* window) {
+b8_t destroy_window(QuarkWindow* window) {
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         window,
         "Attempted to destroy NULL window"
     );
@@ -100,9 +100,9 @@ QUARK_B8 destroy_window(QuarkWindow* window) {
     EXECUTE_UNHANDLED(glfwDestroyWindow(window_handle));
 }
 
-QUARK_B8 window_should_close(const QuarkWindow* window) {
+b8_t window_should_close(const QuarkWindow* window) {
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         window,
         "Attempted to check if NULL window should close"
     );

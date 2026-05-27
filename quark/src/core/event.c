@@ -1,7 +1,5 @@
 #include "event.h"
 
-
-#include <quark/primitives.h>
 #include <quark/core/assert.h>
 
 #include <cstdlib/mem.h>
@@ -19,14 +17,14 @@ typedef struct Event
 struct EventQueue
 {
     Event* buffer;
-    QUARK_USIZE mask;
+    usize_t mask;
     atomic_size_t enqueue;
     atomic_size_t dequeue;
 };
 
-static constexpr QUARK_USIZE OFFSET = MEM_ALIGN_UP(sizeof(EventQueue), alignof(Event));
+static constexpr usize_t OFFSET = MEM_ALIGN_UP(sizeof(EventQueue), alignof(Event));
 
-EventQueue* create_event_queue(const QUARK_USIZE capacity) {
+EventQueue* create_event_queue(const usize_t capacity) {
     QUARK_ASSERT_RETURN(
         nullptr,
         capacity != 0,
@@ -45,10 +43,10 @@ EventQueue* create_event_queue(const QUARK_USIZE capacity) {
         "Failed to allocate event queue"
     );
 
-    queue->buffer = (Event*) (((QUARK_U8*) queue) + OFFSET);
+    queue->buffer = (Event*) (((u8_t*) queue) + OFFSET);
     queue->mask = capacity - 1;
 
-    for (size_t idx = 0; idx < capacity; ++idx) {
+    for (usize_t idx = 0; idx < capacity; ++idx) {
         atomic_init(&queue->buffer[idx].sequence, idx);
     }
     atomic_init(&queue->enqueue, 0);
@@ -57,17 +55,17 @@ EventQueue* create_event_queue(const QUARK_USIZE capacity) {
     return queue;
 }
 
-QUARK_B8 destroy_event_queue(EventQueue* queue) {
+b8_t destroy_event_queue(EventQueue* queue) {
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         queue != nullptr,
         "Event queue is null"
     );
 
-    const size_t enqueue = atomic_load_explicit(&queue->enqueue, memory_order_relaxed);
-    const size_t dequeue = atomic_load_explicit(&queue->dequeue, memory_order_relaxed);
+    const usize_t enqueue = atomic_load_explicit(&queue->enqueue, memory_order_relaxed);
+    const usize_t dequeue = atomic_load_explicit(&queue->dequeue, memory_order_relaxed);
     QUARK_ASSERT_RETURN(
-        QUARK_FALSE,
+        false,
         enqueue == dequeue,
         "Event queue is not empty"
     );
@@ -88,12 +86,12 @@ EventQueueResult emit_event(EventQueue* queue, const QuarkEventId id, const Quar
     );
 
     Event* event;
-    QUARK_USIZE pos = atomic_load_explicit(&queue->enqueue, memory_order_relaxed);
+    usize_t pos = atomic_load_explicit(&queue->enqueue, memory_order_relaxed);
 
-    while (QUARK_TRUE) {
+    while (true) {
         event = &queue->buffer[pos & queue->mask];
-        const QUARK_USIZE seq = atomic_load_explicit(&event->sequence, memory_order_acquire);
-        const QUARK_IPTR diff = (QUARK_IPTR) seq - (QUARK_IPTR) pos;
+        const usize_t seq = atomic_load_explicit(&event->sequence, memory_order_acquire);
+        const isize_t diff = (isize_t) seq - (isize_t) pos;
 
         if (diff == 0) {
             if (atomic_compare_exchange_weak_explicit(
@@ -130,12 +128,12 @@ EventQueueResult poll_event(EventQueue* queue, QuarkEventId* out_id, QuarkEventD
     );
 
     Event* event;
-    QUARK_USIZE pos = atomic_load_explicit(&queue->dequeue, memory_order_relaxed);
+    usize_t pos = atomic_load_explicit(&queue->dequeue, memory_order_relaxed);
 
-    while (QUARK_TRUE) {
+    while (true) {
         event = &queue->buffer[pos & queue->mask];
-        const QUARK_USIZE seq = atomic_load_explicit(&event->sequence, memory_order_acquire);
-        const QUARK_IPTR diff = (QUARK_IPTR) seq - (QUARK_IPTR) (pos + 1);
+        const usize_t seq = atomic_load_explicit(&event->sequence, memory_order_acquire);
+        const isize_t diff = (isize_t) seq - (isize_t) (pos + 1);
 
         if (diff == 0) {
             if (atomic_compare_exchange_weak_explicit(

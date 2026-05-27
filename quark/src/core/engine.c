@@ -6,20 +6,20 @@
 
 #include <cstdlib/cstdlib.h>
 
-QUARK_B8 init_quark(int argc, char** argv) {
+b8_t init_quark(int argc, char** argv) {
     if (!cstdlib_init(nullptr)) {
         QUARK_LOG_FATAL("Failed to initialize cstdlib");
-        return QUARK_FALSE;
+        return false;
     }
 
     if (!init_tracing()) {
         QUARK_LOG_FATAL("Failed to initialize tracing");
-        return QUARK_FALSE;
+        return false;
     }
 
-    return QUARK_TRUE;
+    return true;
 }
 
-QUARK_B8 shutdown_quark(void) {
+b8_t shutdown_quark(void) {
     return shutdown_tracing();
 }

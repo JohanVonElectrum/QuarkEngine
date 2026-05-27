@@ -1,6 +1,6 @@
 #include <quark/entrypoint.h>
 
-QUARK_B8 init_application(ApplicationCreateInfo* create_info)
+b8_t init_application(ApplicationCreateInfo* create_info)
 {
     create_info->name = "Testbed";
     create_info->version = (Version){
@@ -29,5 +29,5 @@ QUARK_B8 init_application(ApplicationCreateInfo* create_info)
 
     QUARK_LOG_INFO("Initialized application create info");
 
-    return QUARK_TRUE;
+    return true;
 }
