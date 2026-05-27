@@ -6,7 +6,6 @@
 #include <cglm/call.h>
 
 static b8_t camera_get_view_matrix(const Camera* in_camera, mat4 out_matrix) {
-    QUARK_ASSERT_RETURN(false, in_camera != nullptr && out_matrix != nullptr, "Invalid camera or output matrix pointer");
     const auto camera = (Camera*)in_camera;
 
     vec3 forward = {0.0f, 0.0f, 0.0f};
@@ -42,8 +41,6 @@ static b8_t camera_get_view_matrix(const Camera* in_camera, mat4 out_matrix) {
 }
 
 static b8_t camera_get_perspective_projection_matrix(const Camera* camera, const f32_t aspect_ratio, mat4 out_matrix) {
-    QUARK_ASSERT_RETURN(false, camera != nullptr && out_matrix != nullptr, "Invalid camera or output matrix pointer");
-
     if (aspect_ratio <= 0.0f) {
         QUARK_LOG_ERROR("Camera aspect ratio must be greater than zero");
         return false;
@@ -65,8 +62,6 @@ static b8_t camera_get_perspective_projection_matrix(const Camera* camera, const
 }
 
 b8_t camera_get_view_projection_matrix(const Camera* camera, const f32_t aspect_ratio, mat4 out_matrix) {
-    QUARK_ASSERT_RETURN(false, camera != nullptr && out_matrix != nullptr, "Invalid camera or output matrix pointer");
-
     mat4 view_matrix;
     mat4 projection_matrix;
 
@@ -79,5 +74,89 @@ b8_t camera_get_view_projection_matrix(const Camera* camera, const f32_t aspect_
     }
 
     glm_mat4_mul(projection_matrix, view_matrix, out_matrix);
+    return true;
+}
+
+b8_t camera_extract_frustum(const mat4* vp, Frustum* out)
+{
+    mat4 m = {
+        { (*vp)[0][0], (*vp)[0][1], (*vp)[0][2], (*vp)[0][3] },
+        { (*vp)[1][0], (*vp)[1][1], (*vp)[1][2], (*vp)[1][3] },
+        { (*vp)[2][0], (*vp)[2][1], (*vp)[2][2], (*vp)[2][3] },
+        { (*vp)[3][0], (*vp)[3][1], (*vp)[3][2], (*vp)[3][3] },
+    };
+
+    glm_vec4_add(m[3], m[0], out->planes[0]);
+    glm_vec4_sub(m[3], m[0], out->planes[1]);
+    glm_vec4_add(m[3], m[1], out->planes[2]);
+    glm_vec4_sub(m[3], m[1], out->planes[3]);
+    glm_vec4_add(m[3], m[2], out->planes[4]);
+    glm_vec4_sub(m[3], m[2], out->planes[5]);
+
+    for (int i = 0; i < 6; ++i) {
+        vec4 p = {
+            out->planes[i][0],
+            out->planes[i][1],
+            out->planes[i][2],
+            0.0f
+        };
+        const f32_t len = glm_vec3_norm(p);
+        if (len > 1e-6f) {
+            out->planes[i][0] /= len;
+            out->planes[i][1] /= len;
+            out->planes[i][2] /= len;
+            out->planes[i][3] /= len;
+        } else {
+            QUARK_LOG_WARN("camera_extract_frustum: degenerate plane %d encountered", i);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+b8_t aabb_in_frustum(const Frustum* frustum, vec3 min, vec3 max)
+{
+    for (int i = 0; i < 6; ++i) {
+        const vec4* plane = &frustum->planes[i];
+
+        const vec3 positive_vertex = {
+            (plane[0][0] >= 0.0f) ? max[0] : min[0],
+            (plane[0][1] >= 0.0f) ? max[1] : min[1],
+            (plane[0][2] >= 0.0f) ? max[2] : min[2],
+        };
+
+        const f32_t distance = plane[0][0] * positive_vertex[0] +
+                         plane[0][1] * positive_vertex[1] +
+                         plane[0][2] * positive_vertex[2] +
+                         plane[0][3];
+
+        if (distance < 0.0f) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+b8_t sphere_in_frustum(const Frustum* frustum, const vec3 center, f32_t radius)
+{
+    if (radius < 0.0f) {
+        radius = 0.0f;
+    }
+
+    for (int i = 0; i < 6; ++i) {
+        const vec4* plane = &frustum->planes[i];
+
+        const f32_t distance = plane[0][0] * center[0] +
+                         plane[0][1] * center[1] +
+                         plane[0][2] * center[2] +
+                         plane[0][3];
+
+        if (distance < -radius) {
+            return false;
+        }
+    }
+
     return true;
 }

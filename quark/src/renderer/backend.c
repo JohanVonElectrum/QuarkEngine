@@ -12,7 +12,6 @@
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
-#include <string.h>
 
 static VulkanContext context;
 static GLFWwindow* s_current_window = nullptr;
