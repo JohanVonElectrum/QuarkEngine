@@ -1,7 +1,7 @@
 #pragma once
 
-#include <quark/api.h>
 #include <cstdlib/common.h>
+#include <quark/api.h>
 
 typedef enum
 {
@@ -21,7 +21,7 @@ typedef enum
  * @param level      Severity level.
  * @param format     printf-style format string.
  */
-QUARK_API void quark_log(b8_t is_engine, LogLevel level, const char* format, ...);
+QUARK_EXPORT void quark_log(b8_t is_engine, LogLevel level, const char* format, ...);
 
 // Set to `LOG_LEVEL_NONE` to disable console logging.
 #define MIN_LOG_LEVEL LOG_LEVEL_TRACE

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <quark/api.h>
 #include <cstdlib/common.h>
+#include <quark/api.h>
 #include <quark/core/camera.h>
 #include <quark/core/window.h>
 
@@ -45,7 +45,7 @@ extern b8_t init_application(ApplicationCreateInfo* create_info);
  * Called after `init_application`. The application should perform any
  * heavy initialization here.
  */
-QUARK_API Application* create_application(const ApplicationCreateInfo* create_info);
+QUARK_EXPORT Application* create_application(const ApplicationCreateInfo* create_info);
 
 /**
  * Run the main application loop.
@@ -53,9 +53,9 @@ QUARK_API Application* create_application(const ApplicationCreateInfo* create_in
  * The engine will call this after creation. The application returns when it
  * wants to exit.
  */
-QUARK_API b8_t run_application(Application* application);
+QUARK_EXPORT b8_t run_application(Application* application);
 
 /**
  * Destroy the application and release its resources.
  */
-QUARK_API b8_t destroy_application(Application* application);
+QUARK_EXPORT b8_t destroy_application(Application* application);

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <quark/api.h>
 #include <cstdlib/common.h>
+#include <quark/api.h>
 
 /**
  * Exit codes that can be returned from the engine's main entry point.
@@ -31,7 +31,7 @@ enum QUARK_EXIT_CODE
  * @retval true on success.
  * @retval false on failure (engine is not usable).
  */
-QUARK_API b8_t init_quark(int argc, char** argv);
+QUARK_EXPORT b8_t init_quark(int argc, char** argv);
 
 /**
  * Shut down the Quark engine.
@@ -42,4 +42,4 @@ QUARK_API b8_t init_quark(int argc, char** argv);
  * @retval true on success.
  * @retval false on failure during shutdown.
  */
-QUARK_API b8_t shutdown_quark(void);
+QUARK_EXPORT b8_t shutdown_quark(void);

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <quark/core/log.h>
-#include <cstdlib/common.h>
+#include <cstdlib/primitives.h>
 
 b8_t init_tracing();
 b8_t shutdown_tracing();

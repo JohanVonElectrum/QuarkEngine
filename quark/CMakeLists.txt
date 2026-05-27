@@ -10,11 +10,17 @@ add_library(quark SHARED
     src/renderer/swapchain.c
 )
 
-target_include_directories(quark PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+include(GenerateExportHeader)
+generate_export_header(quark
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/generated/include/quark/api.h"
+    BASE_NAME QUARK
 )
 
-target_compile_definitions(quark PRIVATE QUARK_ENGINE)
+target_include_directories(quark PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/include>
+    $<INSTALL_INTERFACE:include>
+)
 
 if (WIN32)
     target_compile_definitions(quark PRIVATE QUARK_PLATFORM_WINDOWS)

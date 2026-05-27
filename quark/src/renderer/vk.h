@@ -2,7 +2,7 @@
 
 #include <quark/macro.h>
 #include <quark/core/assert.h>
-#include <cstdlib/common.h>
+#include <cstdlib/primitives.h>
 
 #include <vulkan/vulkan.h>
 

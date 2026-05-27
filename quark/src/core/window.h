@@ -1,7 +1,7 @@
 #pragma once
 
 #include <quark/core/window.h>
-#include <cstdlib/common.h>
+#include <cstdlib/primitives.h>
 
 b8_t init_windowing();
 b8_t shutdown_windowing();
