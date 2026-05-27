@@ -3,10 +3,11 @@
 #include "device.h"
 #include "swapchain.h"
 #include "vk.h"
-#include "../platform/memory.h"
 
 #include <quark/core/assert.h>
 #include <quark/core/log.h>
+
+#include <cstdlib/mem.h>
 
 #include <GLFW/glfw3.h>
 
@@ -72,7 +73,7 @@ QUARK_B8 init_renderer_backend(
 
 #ifdef QUARK_DEBUG
     const char* extensions[instance_create_info.enabledExtensionCount + 1];
-    quark_mem_copy(extensions, instance_create_info.ppEnabledExtensionNames,
+    mem_copy(extensions, instance_create_info.ppEnabledExtensionNames,
                    instance_create_info.enabledExtensionCount * sizeof(const char*));
     extensions[instance_create_info.enabledExtensionCount++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     instance_create_info.ppEnabledExtensionNames = extensions;
@@ -463,7 +464,7 @@ static QUARK_B8 read_binary_file(const char* path, QUARK_U8** out_data, QUARK_US
         return QUARK_FALSE;
     }
 
-    QUARK_U8* data = quark_mem_alloc((QUARK_USIZE) file_size);
+    QUARK_U8* data = mem_heap_alloc((QUARK_USIZE) file_size);
     if (data == nullptr) {
         fclose(file);
         QUARK_LOG_ERROR("Failed to allocate memory for shader file: %s", path);
@@ -474,7 +475,7 @@ static QUARK_B8 read_binary_file(const char* path, QUARK_U8** out_data, QUARK_US
     fclose(file);
 
     if (bytes_read != (QUARK_USIZE) file_size) {
-        quark_mem_free(data);
+        mem_heap_free(data);
         QUARK_LOG_ERROR("Failed to read shader file: %s", path);
         return QUARK_FALSE;
     }
@@ -509,12 +510,12 @@ static QUARK_B8 create_shader_module_from_file(const char* path, VkShaderModule*
             out_module
         ),
         {
-            quark_mem_free(shader_code);
+            mem_heap_free(shader_code);
             return QUARK_FALSE;
         }
     );
 
-    quark_mem_free(shader_code);
+    mem_heap_free(shader_code);
     return QUARK_TRUE;
 }
 

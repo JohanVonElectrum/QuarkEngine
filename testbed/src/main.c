@@ -9,8 +9,8 @@ QUARK_B8 init_application(ApplicationCreateInfo* create_info)
         .patch = 0,
     };
     create_info->camera = (Camera){
-        .position = {0.0f, 0.0f, 2.0f},
-        .forward = {0.0f, 0.0f, -1.0f},
+        .position = {2.0f, -1.0f, 4.0f},
+        .forward = {-0.5f, 0.0f, -1.0f},
         .up = {0.0f, 1.0f, 0.0f},
         .fov_y_radians = 1.0471976f,
         .near_plane = 0.1f,

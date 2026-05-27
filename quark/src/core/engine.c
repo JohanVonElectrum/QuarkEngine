@@ -1,13 +1,14 @@
 #include <quark/core/engine.h>
 
 #include "../core/tracing.h"
-#include "../platform/thread.h"
 
 #include <quark/core/log.h>
 
+#include <cstdlib/cstdlib.h>
+
 QUARK_B8 init_quark(int argc, char** argv) {
-    if (!init_main_thread()) {
-        QUARK_LOG_FATAL("Failed to initialize main thread");
+    if (!cstdlib_init(nullptr)) {
+        QUARK_LOG_FATAL("Failed to initialize cstdlib");
         return QUARK_FALSE;
     }
 

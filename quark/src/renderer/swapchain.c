@@ -1,9 +1,10 @@
 #include "swapchain.h"
 
 #include "device.h"
-#include "../platform/memory.h"
 
 #include <quark/core/log.h>
+
+#include <cstdlib/mem.h>
 
 static VkSurfaceFormatKHR choose_swapchain_surface_format(const SwapchainSupportDetails* support);
 static VkPresentModeKHR choose_swapchain_present_mode(const SwapchainSupportDetails* support);
@@ -103,7 +104,7 @@ QUARK_B8 create_vulkan_swapchain(
         }
     );
 
-    swapchain.images = quark_mem_alloc(sizeof(VkImage) * swapchain.image_count);
+    swapchain.images = mem_heap_alloc(sizeof(VkImage) * swapchain.image_count);
     if (swapchain.images == nullptr) {
         QUARK_LOG_ERROR("Failed to allocate memory for swapchain images");
         destroy_vulkan_swapchain_resources(context, &swapchain);
@@ -118,7 +119,7 @@ QUARK_B8 create_vulkan_swapchain(
         }
     );
 
-    swapchain.image_views = quark_mem_calloc(swapchain.image_count, sizeof(VkImageView));
+    swapchain.image_views = mem_heap_calloc(swapchain.image_count, sizeof(VkImageView));
     if (swapchain.image_views == nullptr) {
         QUARK_LOG_ERROR("Failed to allocate memory for swapchain image views");
         destroy_vulkan_swapchain_resources(context, &swapchain);
@@ -193,7 +194,7 @@ QUARK_B8 create_vulkan_swapchain(
         }
     );
 
-    swapchain.command_buffers = quark_mem_alloc(sizeof(VkCommandBuffer) * MAX_FRAMES_IN_FLIGHT);
+    swapchain.command_buffers = mem_heap_alloc(sizeof(VkCommandBuffer) * MAX_FRAMES_IN_FLIGHT);
     if (swapchain.command_buffers == nullptr) {
         QUARK_LOG_ERROR("Failed to allocate memory for swapchain command buffers");
         destroy_vulkan_swapchain_resources(context, &swapchain);
@@ -511,7 +512,7 @@ static QUARK_B8 create_swapchain_render_pass(VulkanContext* context, VulkanSwapc
 }
 
 static QUARK_B8 create_swapchain_framebuffers(VulkanContext* context, VulkanSwapchain* swapchain) {
-    swapchain->framebuffers = quark_mem_calloc(swapchain->image_count, sizeof(VkFramebuffer));
+    swapchain->framebuffers = mem_heap_calloc(swapchain->image_count, sizeof(VkFramebuffer));
     if (swapchain->framebuffers == nullptr) {
         QUARK_LOG_ERROR("Failed to allocate memory for swapchain framebuffers");
         return QUARK_FALSE;
@@ -545,9 +546,9 @@ static QUARK_B8 create_swapchain_framebuffers(VulkanContext* context, VulkanSwap
 }
 
 static QUARK_B8 create_swapchain_sync_objects(VulkanContext* context, VulkanSwapchain* swapchain) {
-    swapchain->image_available_semaphores = quark_mem_calloc(MAX_FRAMES_IN_FLIGHT, sizeof(VkSemaphore));
-    swapchain->render_finished_semaphores = quark_mem_calloc(swapchain->image_count, sizeof(VkSemaphore));
-    swapchain->in_flight_fences = quark_mem_calloc(MAX_FRAMES_IN_FLIGHT, sizeof(VkFence));
+    swapchain->image_available_semaphores = mem_heap_calloc(MAX_FRAMES_IN_FLIGHT, sizeof(VkSemaphore));
+    swapchain->render_finished_semaphores = mem_heap_calloc(swapchain->image_count, sizeof(VkSemaphore));
+    swapchain->in_flight_fences = mem_heap_calloc(MAX_FRAMES_IN_FLIGHT, sizeof(VkFence));
 
     if (
         swapchain->image_available_semaphores == nullptr ||
@@ -617,7 +618,7 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
                 }
             }
         }
-        if (quark_mem_free(swapchain->in_flight_fences) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->in_flight_fences) == QUARK_FALSE) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain fences");
         }
         swapchain->in_flight_fences = nullptr;
@@ -631,7 +632,7 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
                 }
             }
         }
-        if (quark_mem_free(swapchain->render_finished_semaphores) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->render_finished_semaphores) == QUARK_FALSE) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain render-finished semaphores");
         }
         swapchain->render_finished_semaphores = nullptr;
@@ -645,14 +646,14 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
                 }
             }
         }
-        if (quark_mem_free(swapchain->image_available_semaphores) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->image_available_semaphores) == QUARK_FALSE) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain image-available semaphores");
         }
         swapchain->image_available_semaphores = nullptr;
     }
 
     if (swapchain->command_buffers != nullptr) {
-        if (quark_mem_free(swapchain->command_buffers) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->command_buffers) == QUARK_FALSE) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain command buffers");
         }
         swapchain->command_buffers = nullptr;
@@ -671,7 +672,7 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
                 }
             }
         }
-        if (quark_mem_free(swapchain->framebuffers) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->framebuffers) == QUARK_FALSE) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain framebuffers");
         }
         swapchain->framebuffers = nullptr;
@@ -705,14 +706,14 @@ static void destroy_vulkan_swapchain_resources(VulkanContext* context, VulkanSwa
                 }
             }
         }
-        if (quark_mem_free(swapchain->image_views) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->image_views) == QUARK_FALSE) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain image views");
         }
         swapchain->image_views = nullptr;
     }
 
     if (swapchain->images != nullptr) {
-        if (quark_mem_free(swapchain->images) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain->images) == QUARK_FALSE) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain images");
         }
         swapchain->images = nullptr;

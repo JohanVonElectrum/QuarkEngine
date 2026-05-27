@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "../platform/memory.h"
+#include <cstdlib/mem.h>
 
 static QueueFamilyInfo make_invalid_queue_family_info();
 static void free_swapchain_support_details(SwapchainSupportDetails* swapchain_support_details);
@@ -58,14 +58,14 @@ static QueueFamilyInfo make_invalid_queue_family_info() {
 
 static void free_swapchain_support_details(SwapchainSupportDetails* swapchain_support_details) {
     if (swapchain_support_details->formats != nullptr) {
-        if (quark_mem_free(swapchain_support_details->formats) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain_support_details->formats) == QUARK_FALSE) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain surface formats");
         }
         swapchain_support_details->formats = nullptr;
     }
 
     if (swapchain_support_details->present_modes != nullptr) {
-        if (quark_mem_free(swapchain_support_details->present_modes) == QUARK_FALSE) {
+        if (mem_heap_free(swapchain_support_details->present_modes) == QUARK_FALSE) {
             QUARK_LOG_ERROR("Failed to free memory for swapchain surface present modes");
         }
         swapchain_support_details->present_modes = nullptr;
@@ -253,7 +253,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
             QUARK_FALSE
         );
         if (swapchain_support_details.format_count != 0) {
-            swapchain_support_details.formats = quark_mem_alloc(
+            swapchain_support_details.formats = mem_heap_alloc(
                 sizeof(VkSurfaceFormatKHR) * swapchain_support_details.format_count);
 
             if (swapchain_support_details.formats == nullptr) {
@@ -279,7 +279,7 @@ QUARK_B8 select_physical_device(VulkanContext* context) {
             }
         );
         if (swapchain_support_details.present_mode_count != 0) {
-            swapchain_support_details.present_modes = quark_mem_alloc(
+            swapchain_support_details.present_modes = mem_heap_alloc(
                 sizeof(VkPresentModeKHR) * swapchain_support_details.present_mode_count);
 
             if (swapchain_support_details.present_modes == nullptr) {

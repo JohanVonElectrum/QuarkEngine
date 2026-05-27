@@ -1,11 +1,11 @@
 #include "window.h"
 
-#include "../platform/memory.h"
 #include "../renderer/backend.h"
 
 #include <quark/core/assert.h>
 #include <quark/core/log.h>
 
+#include <cstdlib/mem.h>
 #include <GLFW/glfw3.h>
 
 void error_callback(int error, const char* description) {
@@ -78,7 +78,7 @@ QuarkWindow* create_window(const WindowCreateInfo* create_info) {
         return nullptr;
     }
 
-    QuarkWindow* quark_window = quark_mem_alloc(sizeof(QuarkWindow));
+    QuarkWindow* quark_window = mem_heap_alloc(sizeof(QuarkWindow));
     quark_window->handle = window;
 
     glfwSetWindowUserPointer(window, quark_window);
@@ -96,7 +96,7 @@ QUARK_B8 destroy_window(QuarkWindow* window) {
 
     GLFWwindow* window_handle = window->handle;
     shutdown_renderer_window();
-    quark_mem_free(window);
+    mem_heap_free(window);
     EXECUTE_UNHANDLED(glfwDestroyWindow(window_handle));
 }
 

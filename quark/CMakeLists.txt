@@ -18,11 +18,6 @@ target_compile_definitions(quark PRIVATE QUARK_ENGINE)
 
 if (WIN32)
     target_compile_definitions(quark PRIVATE QUARK_PLATFORM_WINDOWS)
-    target_sources(quark PRIVATE
-        src/platform/clock_win32.c
-        src/platform/memory_win32.c
-        src/platform/thread_win32.c
-    )
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -30,6 +25,22 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif ()
 
 include(FetchContent)
+
+set(CSTDLIB_LOCAL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cstdlib" CACHE PATH "Path to local cstdlib for development")
+if(EXISTS "${CSTDLIB_LOCAL_PATH}/CMakeLists.txt")
+    message(STATUS "Using LOCAL cstdlib from ${CSTDLIB_LOCAL_PATH} (development mode)")
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+    add_subdirectory(${CSTDLIB_LOCAL_PATH} cstdlib)
+else()
+    FetchContent_Declare(
+        cstdlib
+        GIT_REPOSITORY https://github.com/JohanVonElectrum/cstdlib.git
+        GIT_TAG        master
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(cstdlib)
+endif()
+target_link_libraries(quark PRIVATE cstdlib::shared)
 
 FetchContent_Declare(
     glfw

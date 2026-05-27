@@ -1,9 +1,10 @@
 #include "event.h"
 
-#include "../platform/memory.h"
 
 #include <quark/primitives.h>
 #include <quark/core/assert.h>
+
+#include <cstdlib/mem.h>
 
 #include <stdatomic.h>
 
@@ -23,7 +24,7 @@ struct EventQueue
     atomic_size_t dequeue;
 };
 
-static constexpr QUARK_USIZE OFFSET = QUARK_ALIGN_UP(sizeof(EventQueue), alignof(Event));
+static constexpr QUARK_USIZE OFFSET = MEM_ALIGN_UP(sizeof(EventQueue), alignof(Event));
 
 EventQueue* create_event_queue(const QUARK_USIZE capacity) {
     QUARK_ASSERT_RETURN(
@@ -37,7 +38,7 @@ EventQueue* create_event_queue(const QUARK_USIZE capacity) {
         "Event queue capacity must be a power of 2"
     );
 
-    EventQueue* queue = quark_mem_calloc(1, OFFSET + capacity * sizeof(Event));
+    EventQueue* queue = mem_heap_calloc(1, OFFSET + capacity * sizeof(Event));
     QUARK_ASSERT_RETURN(
         nullptr,
         queue != nullptr,
@@ -71,7 +72,7 @@ QUARK_B8 destroy_event_queue(EventQueue* queue) {
         "Event queue is not empty"
     );
 
-    return quark_mem_free(queue);
+    return mem_heap_free(queue);
 }
 
 EventQueueResult emit_event(EventQueue* queue, const QuarkEventId id, const QuarkEventData arg1, const QuarkEventData arg2) {

@@ -1,12 +1,13 @@
 #include "tracing.h"
 
 #include "event.h"
-#include "../platform/clock.h"
-#include "../platform/memory.h"
-#include "../platform/thread.h"
 
 #include <quark/core/assert.h>
 #include <quark/core/engine.h>
+
+#include <cstdlib/clock.h>
+#include <cstdlib/mem.h>
+#include <cstdlib/thread.h>
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -17,7 +18,7 @@
 
 static thread_local QUARK_USIZE tracing_span_id_counter = 0;
 static EventQueue* queue = nullptr;
-static QuarkThread* thread = nullptr;
+static thread_t* thread = nullptr;
 static QUARK_B8 initialized = QUARK_FALSE;
 
 typedef enum MSG_TYPE
@@ -59,7 +60,7 @@ QUARK_B8 init_tracing() {
         !initialized,
         "Tracing already initialized"
     );
-    thread = spawn_thread(worker, nullptr);
+    thread = spawn_thread(worker, nullptr, &HEAP_ALLOCATOR);
     QUARK_ASSERT_X(
         QUARK_ASSERT_RETURN(
             QUARK_FALSE,
@@ -112,7 +113,7 @@ void quark_log(const QUARK_B8 is_engine, const LogLevel level, const char* forma
     __builtin_va_list args;
     va_start(args, format);
     const QUARK_USIZE len = vsnprintf(nullptr, 0, format, args);
-    char* buffer = quark_mem_alloc(len + 1);
+    char* buffer = mem_heap_alloc(len + 1);
     vsnprintf(buffer, len + 1, format, args);
     va_end(args);
 
@@ -120,10 +121,10 @@ void quark_log(const QUARK_B8 is_engine, const LogLevel level, const char* forma
 }
 
 const QuarkTracingSpan* quark_start_tracing_span() {
-    QuarkTracingSpan* span = quark_mem_alloc(sizeof(QuarkTracingSpan));
+    QuarkTracingSpan* span = mem_heap_alloc(sizeof(QuarkTracingSpan));
     span->parent = tracing_span_id_counter == 0 ? 0 : tracing_span_id_counter - 1;
     span->id = tracing_span_id_counter++;
-    span->tid = get_thread_id(current_thread);
+    span->tid = get_thread_id(get_current_thread());
     span->time = get_monotonic_ticks();
     return span;
 }
@@ -142,7 +143,7 @@ void quark_end_tracing_span(const QuarkTracingSpan* span) {
 #ifdef QUARK_DEBUG
     QUARK_ASSERT_X(
         { return; },
-        span->tid == get_thread_id(current_thread),
+        span->tid == get_thread_id(get_current_thread()),
         "Tracing span end called from a different thread"
     );
 #endif // QUARK_DEBUG
@@ -205,11 +206,11 @@ void process_log(const QUARK_B8 is_engine, const LogLevel level, const char* msg
 
     // TODO: print binary event to file
 
-    quark_mem_free((void*) msg);
+    mem_heap_free((void*) msg);
 }
 
 void process_trace(const QuarkTracingSpan* span, QUARK_USIZE monotonic_ticks) {
     // TODO: print binary event to file
 
-    quark_mem_free((void*) span);
+    mem_heap_free((void*) span);
 }
