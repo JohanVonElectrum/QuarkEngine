@@ -2,6 +2,9 @@
 
 #include <cstdlib/primitives.h>
 
+/**
+ * Supported window presentation modes.
+ */
 typedef enum
 {
     WINDOW_MODE_HEADLESS,
@@ -10,6 +13,9 @@ typedef enum
     WINDOW_MODE_BORDERLESS,
 } WindowMode;
 
+/**
+ * Parameters describing how a window should be created.
+ */
 typedef struct
 {
     WindowMode mode;

@@ -6,7 +6,8 @@
 /**
  * Simple perspective camera definition.
  *
- * Used to compute view-projection matrices for rendering.
+ * Used by the renderer and application to compute view-projection matrices.
+ * The camera uses a right-handed coordinate system.
  */
 typedef struct
 {

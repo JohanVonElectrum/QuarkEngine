@@ -2,8 +2,12 @@
 
 #include <quark/api.h>
 
-#include <cstdlib/common.h>
+#include <cstdlib/primitives.h>
+#include <cstdlib/nullability.h>
 
+/**
+ * Severity levels for the logging system (from most to least severe).
+ */
 typedef enum
 {
     LOG_LEVEL_NONE,
@@ -16,13 +20,15 @@ typedef enum
 } LogLevel;
 
 /**
- * Low-level logging entry point. Prefer the QUARK_LOG_* macros in practice.
+ * Low-level logging entry point.
  *
- * @param is_engine  true if this is an internal engine log, false for application logs.
- * @param level      Severity level.
- * @param format     printf-style format string.
+ * Prefer the `QUARK_LOG_*` family of macros in practice.
+ *
+ * @param is_engine true if this log comes from inside the engine.
+ * @param level     Severity of the message.
+ * @param format    printf-style format string (followed by variadic arguments).
  */
-QUARK_EXPORT void quark_log(b8_t is_engine, LogLevel level, const char* format, ...);
+QUARK_EXPORT void quark_log(b8_t is_engine, LogLevel level, IN_NONNULL const char* format, ...) NONNULL_ARGS(3);
 
 // Set to `LOG_LEVEL_NONE` to disable console logging.
 #define MIN_LOG_LEVEL LOG_LEVEL_TRACE

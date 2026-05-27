@@ -2,6 +2,7 @@
 
 #include <quark/core/window.h>
 #include <cstdlib/primitives.h>
+#include <cstdlib/nullability.h>
 
 b8_t init_windowing();
 b8_t shutdown_windowing();
@@ -9,6 +10,6 @@ b8_t windowing_poll_events();
 
 typedef struct QuarkWindow QuarkWindow;
 
-QuarkWindow* create_window(const WindowCreateInfo* create_info);
-b8_t destroy_window(QuarkWindow* window);
-b8_t window_should_close(const QuarkWindow* window);
+QuarkWindow* create_window(IN_NONNULL const WindowCreateInfo* create_info) NONNULL_ARGS();
+b8_t destroy_window(IN_NONNULL QuarkWindow* window) NONNULL_ARGS();
+b8_t window_should_close(IN_NONNULL const QuarkWindow* window) NONNULL_ARGS();

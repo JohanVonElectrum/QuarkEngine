@@ -27,12 +27,14 @@ enum QUARK_EXIT_CODE
  * early failure paths). This initializes cstdlib, the tracing subsystem,
  * and other core facilities.
  *
- * @param argc Argument count from main().
- * @param argv Argument vector from main().
+ * @param argc Number of command-line arguments.
+ * @param argv Array of command-line argument strings (may be NULL if argc is 0).
  * @retval true on success.
- * @retval false on failure (engine is not usable).
+ * @retval false on failure (the engine is not usable after this point).
+ *
+ * @see shutdown_quark
  */
-QUARK_EXPORT b8_t init_quark(int argc, char** argv);
+QUARK_EXPORT b8_t init_quark(int argc, IN_NULLABLE char** argv);
 
 /**
  * Shut down the Quark engine.
@@ -42,5 +44,7 @@ QUARK_EXPORT b8_t init_quark(int argc, char** argv);
  *
  * @retval true on success.
  * @retval false on failure during shutdown.
+ *
+ * @see init_quark
  */
 QUARK_EXPORT b8_t shutdown_quark(void);

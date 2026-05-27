@@ -4,6 +4,7 @@
 #include <quark/core/assert.h>
 
 #include <cstdlib/primitives.h>
+#include <cstdlib/nullability.h>
 #include <vulkan/vulkan.h>
 
 #define VK_CHECK_X(expr, extra) { \
@@ -83,6 +84,12 @@ typedef struct VulkanDevice
     VkQueue transfer_queue;
 } VulkanDevice;
 
+/**
+ * Central Vulkan state container.
+ *
+ * Holds all long-lived Vulkan objects used by the renderer backend.
+ * There is currently one global instance of this structure.
+ */
 typedef struct
 {
     VkInstance instance;
