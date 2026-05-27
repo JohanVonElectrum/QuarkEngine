@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cstdlib/common.h>
 #include <quark/api.h>
+
+#include <cstdlib/common.h>
 
 /**
  * Exit codes that can be returned from the engine's main entry point.

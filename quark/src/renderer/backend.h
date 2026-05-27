@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/camera.h"
+
 #include <cstdlib/primitives.h>
 
 typedef struct GLFWwindow GLFWwindow;

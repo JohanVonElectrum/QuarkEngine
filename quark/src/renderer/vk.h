@@ -2,8 +2,8 @@
 
 #include <quark/macro.h>
 #include <quark/core/assert.h>
-#include <cstdlib/primitives.h>
 
+#include <cstdlib/primitives.h>
 #include <vulkan/vulkan.h>
 
 #define VK_CHECK_X(expr, extra) { \

@@ -1,8 +1,8 @@
 #include "device.h"
 
-#include <string.h>
-
 #include <cstdlib/mem.h>
+
+#include <string.h>
 
 static QueueFamilyInfo make_invalid_queue_family_info();
 static void free_swapchain_support_details(SwapchainSupportDetails* swapchain_support_details);

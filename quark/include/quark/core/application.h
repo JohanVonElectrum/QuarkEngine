@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cstdlib/common.h>
 #include <quark/api.h>
 #include <quark/core/camera.h>
 #include <quark/core/window.h>
+
+#include <cstdlib/common.h>
 
 /**
  * Simple semantic version structure.

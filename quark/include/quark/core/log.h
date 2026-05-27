@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cstdlib/common.h>
 #include <quark/api.h>
+
+#include <cstdlib/common.h>
 
 typedef enum
 {
