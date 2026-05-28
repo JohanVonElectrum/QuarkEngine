@@ -6,6 +6,7 @@ add_library(quark SHARED
     src/core/engine.c
     src/core/event.c
     src/renderer/backend.c
+    src/renderer/buffer.c
     src/renderer/device.c
     src/renderer/swapchain.c
 )

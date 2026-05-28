@@ -2,8 +2,8 @@
 
 #include <quark/api.h>
 
-#include <cstdlib/primitives.h>
 #include <cstdlib/nullability.h>
+#include <cstdlib/primitives.h>
 
 /**
  * Severity levels for the logging system (from most to least severe).
@@ -27,6 +27,7 @@ typedef enum
  * @param is_engine true if this log comes from inside the engine.
  * @param level     Severity of the message.
  * @param format    printf-style format string (followed by variadic arguments).
+ * @param ...       variadic arguments for the format string.
  */
 QUARK_EXPORT void quark_log(b8_t is_engine, LogLevel level, IN_NONNULL const char* format, ...) NONNULL_ARGS(3);
 

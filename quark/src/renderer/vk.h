@@ -4,7 +4,6 @@
 #include <quark/core/assert.h>
 
 #include <cstdlib/primitives.h>
-#include <cstdlib/nullability.h>
 #include <vulkan/vulkan.h>
 
 #define VK_CHECK_X(expr, extra) { \

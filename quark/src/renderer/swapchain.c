@@ -1,5 +1,6 @@
 #include "swapchain.h"
 
+#include "buffer.h"
 #include "device.h"
 
 #include <quark/core/log.h>
@@ -15,11 +16,6 @@ static VkExtent2D choose_swapchain_extent(
 );
 static u32_t choose_swapchain_image_count(const SwapchainSupportDetails* support);
 static VkFormat choose_depth_format(VulkanContext* context);
-static u32_t find_memory_type(
-    VulkanContext* context,
-    u32_t type_filter,
-    VkMemoryPropertyFlags required_properties
-);
 static b8_t has_stencil_component(VkFormat format);
 static b8_t create_depth_resources(VulkanContext* context, VulkanSwapchain* swapchain, VkFormat depth_format);
 static b8_t create_swapchain_render_pass(VulkanContext* context, VulkanSwapchain* swapchain, VkFormat depth_format);
@@ -324,24 +320,6 @@ static VkFormat choose_depth_format(VulkanContext* context) {
     return VK_FORMAT_UNDEFINED;
 }
 
-static u32_t find_memory_type(
-    VulkanContext* context,
-    const u32_t type_filter,
-    const VkMemoryPropertyFlags required_properties
-) {
-    VkPhysicalDeviceMemoryProperties memory_properties;
-    vkGetPhysicalDeviceMemoryProperties(context->device.physical_device, &memory_properties);
-
-    for (u32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
-        if ((type_filter & (1u << i)) != 0 &&
-            (memory_properties.memoryTypes[i].propertyFlags & required_properties) == required_properties) {
-            return i;
-        }
-    }
-
-    return QUARK_VK_INVALID_QUEUE_FAMILY_INDEX;
-}
-
 static b8_t has_stencil_component(const VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
@@ -377,7 +355,7 @@ static b8_t create_depth_resources(VulkanContext* context, VulkanSwapchain* swap
     VkMemoryRequirements memory_requirements;
     vkGetImageMemoryRequirements(context->device.logical_device, swapchain->depth_image, &memory_requirements);
 
-    const u32_t memory_type_index = find_memory_type(
+    const u32_t memory_type_index = vulkan_find_memory_type(
         context,
         memory_requirements.memoryTypeBits,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT

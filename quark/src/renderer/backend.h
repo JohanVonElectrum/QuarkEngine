@@ -2,8 +2,8 @@
 
 #include "../core/camera.h"
 
-#include <cstdlib/primitives.h>
 #include <cstdlib/nullability.h>
+#include <cstdlib/primitives.h>
 
 typedef struct GLFWwindow GLFWwindow;
 
