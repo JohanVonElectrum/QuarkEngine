@@ -109,3 +109,12 @@ b8_t window_should_close(const QuarkWindow* window) {
 
     return glfwWindowShouldClose(window->handle);
 }
+
+GLFWwindow* window_get_glfw_handle(QuarkWindow* window) {
+    QUARK_ASSERT_RETURN(
+        nullptr,
+        window,
+        "Attempted to get GLFW handle from NULL window"
+    );
+    return window->handle;
+}

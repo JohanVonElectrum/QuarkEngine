@@ -2,6 +2,7 @@ add_library(quark SHARED
     src/core/application.c
     src/core/camera.c
     src/core/window.c
+    src/core/input.c
     src/core/tracing.c
     src/core/engine.c
     src/core/event.c

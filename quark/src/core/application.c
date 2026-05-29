@@ -1,10 +1,13 @@
 #include "application.h"
 
 #include "window.h"
+#include "input.h"
 #include "../renderer/backend.h"
 
 #include <quark/core/assert.h>
 #include <quark/core/log.h>
+
+#include <cstdlib/clock.h>
 
 struct Application
 {
@@ -16,6 +19,7 @@ struct Application
 };
 
 static Application s_application;
+static usize_t s_last_frame_ticks = 0;
 
 static const char* window_mode_name(const WindowMode mode) {
     switch (mode) {
@@ -81,6 +85,14 @@ Application* create_application(const ApplicationCreateInfo* create_info) {
             }
             return nullptr;
         }
+
+        if (!init_input(s_application.window)) {
+            QUARK_LOG_ERROR("Failed to initialize input system");
+            if (!shutdown_windowing()) {
+                QUARK_LOG_ERROR("Failed to shutdown windowing system");
+            }
+            return nullptr;
+        }
     }
 
     s_application.flags |= APPLICATION_FLAG_INIT;
@@ -99,6 +111,8 @@ b8_t run_application(Application* application) {
         "Attempted to run application that was not initialized"
     );
 
+    const usize_t freq = get_monotonic_frequency();
+
     while (application->flags & APPLICATION_FLAG_RUNNING) {
         if (application->flags & APPLICATION_FLAG_SHOULD_CLOSE) {
             application->flags &= ~APPLICATION_FLAG_RUNNING;
@@ -116,10 +130,27 @@ b8_t run_application(Application* application) {
                 continue;
             }
 
+            const usize_t now = get_monotonic_ticks();
+            f32_t dt = (1.0f / 60.0f);
+            if (s_last_frame_ticks != 0 && freq > 0) {
+                const usize_t delta = now - s_last_frame_ticks;
+                dt = (f32_t) ((f64_t) delta / (f64_t) freq);
+            }
+            s_last_frame_ticks = now;
+            if (dt < 0.0f) dt = 0.0f;
+            if (dt > 0.25f) {
+                QUARK_LOG_WARN("Large delta time detected (%.3f seconds), capping to 0.25s to avoid issues", dt);
+                dt = 0.25f;
+            }
+
+            input_process(dt, &application->camera);
+
             if (!render_renderer_frame(&application->camera)) {
                 QUARK_LOG_ERROR("Failed to render frame");
                 return false;
             }
+        } else {
+            s_last_frame_ticks = get_monotonic_ticks();
         }
     }
 
@@ -141,7 +172,10 @@ b8_t destroy_application(Application* application) {
     b8_t result = true;
 
     if (!(application->flags & APPLICATION_FLAG_HEADLESS)) {
-         if (application->window) {
+        shutdown_input();
+        s_last_frame_ticks = 0;
+
+        if (application->window) {
             if (!destroy_window(application->window)) {
                 QUARK_LOG_ERROR("Failed to destroy window");
                 result = false;

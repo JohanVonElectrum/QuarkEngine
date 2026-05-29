@@ -58,6 +58,8 @@ static b8_t camera_get_perspective_projection_matrix(const Camera* camera, const
 
     glm_perspective_rh_no(camera->fov_y_radians, aspect_ratio, camera->near_plane, camera->far_plane, out_matrix);
 
+    out_matrix[1][1] *= -1.0f;
+
     return true;
 }
 

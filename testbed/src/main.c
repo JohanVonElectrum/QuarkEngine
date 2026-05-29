@@ -9,8 +9,8 @@ b8_t init_application(ApplicationCreateInfo* create_info)
         .patch = 0,
     };
     create_info->camera = (Camera){
-        .position = {2.0f, -1.0f, 4.0f},
-        .forward = {-0.5f, 0.0f, -1.0f},
+        .position = {2.0f, 3.0f, 4.0f},
+        .forward = {-2.0f, -3.0f, -4.0f},
         .up = {0.0f, 1.0f, 0.0f},
         .fov_y_radians = 1.0471976f,
         .near_plane = 0.1f,
